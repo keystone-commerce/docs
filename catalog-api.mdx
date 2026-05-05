@@ -26,11 +26,22 @@ The API key identifies the partner account automatically. Do not send `partnerId
 
 ## Response format
 
-Successful list responses are returned in a paginated envelope.
+Successful responses are returned in a standard envelope.
 
 ```json
 {
-  "success": true,
+  "statusCode": 200,
+  "message": "Success",
+  "data": {}
+}
+```
+
+Paginated list responses include `meta`.
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
   "data": [],
   "meta": {
     "total": 0,
@@ -41,7 +52,7 @@ Successful list responses are returned in a paginated envelope.
 }
 ```
 
-Single-resource responses return the requested object.
+Single-resource responses return the requested object in `data`.
 
 ## Health check
 
@@ -138,4 +149,3 @@ The following capabilities are not part of this partner API release:
 | Orders | Pending |
 | Payments | Pending |
 | Coupons | Pending with orders |
-
