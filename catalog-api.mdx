@@ -68,6 +68,21 @@ Example:
 curl https://api.keystonecommerce.in/api/v1/health
 ```
 
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "status": "ok",
+    "database": "connected",
+    "redis": "connected",
+    "uptime": 3811.248642428
+  }
+}
+```
+
 ## Categories
 
 Returns the active category tree available for the partner.
@@ -81,6 +96,44 @@ Example:
 ```bash
 curl https://api.keystonecommerce.in/api/v1/categories \
   -H "x-api-key: <partner_api_key>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": "cat_cat01",
+      "name": "Vehicle Electronics",
+      "slug": "vehicle-electronics",
+      "description": "CAT01",
+      "parentId": null,
+      "isActive": true,
+      "sortOrder": 1,
+      "children": [
+        {
+          "id": "cat_sub0101",
+          "name": "Stereos & Head Units",
+          "slug": "sub0101-stereos-head-units",
+          "parentId": "cat_cat01",
+          "isActive": true,
+          "sortOrder": 101
+        },
+        {
+          "id": "cat_sub0102",
+          "name": "Cameras (Dash & Reverse)",
+          "slug": "sub0102-cameras-dash-reverse",
+          "parentId": "cat_cat01",
+          "isActive": true,
+          "sortOrder": 102
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ## Products
@@ -107,13 +160,82 @@ Returns products available for the partner.
 Examples:
 
 ```bash
-curl "https://api.keystonecommerce.in/api/v1/products?page=1&limit=20" \
+curl "https://api.keystonecommerce.in/api/v1/products?page=1&limit=2" \
   -H "x-api-key: <partner_api_key>"
 ```
 
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": "prod_key003",
+      "name": "4K UHD Dash Cam with GPS Logger & Parking Mode",
+      "slug": "4k-uhd-dash-cam-with-gps-logger-parking-mode-key003",
+      "brand": "keystone",
+      "sku": "KEY003",
+      "categoryId": "cat_sub0102",
+      "defaultMrp": "6982",
+      "defaultSellingPrice": "5935",
+      "images": [
+        "https://storage.googleapis.com/keystone-media/products/prod_key003/01-screenshot_2026-04-27_at_3.38.32_pm.png"
+      ],
+      "isActive": true
+    },
+    {
+      "id": "prod_key001",
+      "name": "7-Inch Android Car Stereo with Bluetooth",
+      "slug": "7-inch-android-car-stereo-with-bluetooth-key001",
+      "brand": "keystone",
+      "sku": "KEY001",
+      "categoryId": "cat_sub0101",
+      "defaultMrp": "3889",
+      "defaultSellingPrice": "3306",
+      "images": [
+        "https://storage.googleapis.com/keystone-media/products/prod_key001/01-screenshot_2026-04-27_at_3.35.39_pm.png"
+      ],
+      "isActive": true
+    }
+  ],
+  "meta": {
+    "total": 58,
+    "page": 1,
+    "limit": 2,
+    "totalPages": 29
+  }
+}
+```
+
 ```bash
-curl https://api.keystonecommerce.in/api/v1/products/<product_slug> \
+curl https://api.keystonecommerce.in/api/v1/products/4k-uhd-dash-cam-with-gps-logger-parking-mode-key003 \
   -H "x-api-key: <partner_api_key>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "prod_key003",
+    "name": "4K UHD Dash Cam with GPS Logger & Parking Mode",
+    "slug": "4k-uhd-dash-cam-with-gps-logger-parking-mode-key003",
+    "description": "Ultra-HD 4K dashcam with GPS location tagging and intelligent parking surveillance mode",
+    "brand": "keystone",
+    "sku": "KEY003",
+    "categoryId": "cat_sub0102",
+    "defaultMrp": "6982",
+    "defaultSellingPrice": "5935",
+    "images": [
+      "https://storage.googleapis.com/keystone-media/products/prod_key003/01-screenshot_2026-04-27_at_3.38.32_pm.png"
+    ],
+    "isActive": true
+  }
+}
 ```
 
 ## Search
@@ -136,8 +258,51 @@ Searches the partner catalog.
 Example:
 
 ```bash
-curl "https://api.keystonecommerce.in/api/v1/search?q=rice&type=all&limit=20" \
+curl "https://api.keystonecommerce.in/api/v1/search?q=dash&type=all&limit=2" \
   -H "x-api-key: <partner_api_key>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "products": [
+      {
+        "id": "prod_key003",
+        "slug": "4k-uhd-dash-cam-with-gps-logger-parking-mode-key003",
+        "name": "4K UHD Dash Cam with GPS Logger & Parking Mode",
+        "brand": "keystone",
+        "sellingPrice": null
+      },
+      {
+        "id": "prod_key014",
+        "slug": "dashboard-phone-holder-with-360-rotation-key014",
+        "name": "Dashboard Phone Holder with 360 Rotation",
+        "brand": "keystone",
+        "sellingPrice": null
+      }
+    ],
+    "categories": [
+      {
+        "id": "cat_sub0102",
+        "name": "Cameras (Dash & Reverse)",
+        "slug": "sub0102-cameras-dash-reverse",
+        "parentId": null
+      },
+      {
+        "id": "cat_sub0205",
+        "name": "Dashboard Decor",
+        "slug": "sub0205-dashboard-decor",
+        "parentId": null
+      }
+    ],
+    "totalResults": 4,
+    "topScore": 1
+  }
+}
 ```
 
 ## Not included in this release
