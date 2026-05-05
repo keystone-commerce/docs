@@ -1,0 +1,141 @@
+---
+title: "Catalog API"
+description: "Partner catalog API reference"
+---
+
+Version: 1.0  
+Updated: 2026-05-05
+
+This document covers the catalog APIs available for partner integration.
+
+## Base URL
+
+```text
+https://api.keystonecommerce.in/api/v1
+```
+
+## Authentication
+
+Catalog endpoints require the partner API key in the `x-api-key` request header.
+
+```http
+x-api-key: <partner_api_key>
+```
+
+The API key identifies the partner account automatically. Do not send `partnerId` in the URL, query params, or request body.
+
+## Response format
+
+Successful list responses are returned in a paginated envelope.
+
+```json
+{
+  "success": true,
+  "data": [],
+  "meta": {
+    "total": 0,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 0
+  }
+}
+```
+
+Single-resource responses return the requested object.
+
+## Health check
+
+Use this endpoint to verify API availability.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/health` | Not required |
+
+Example:
+
+```bash
+curl https://api.keystonecommerce.in/api/v1/health
+```
+
+## Categories
+
+Returns the active category tree available for the partner.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/categories` | `x-api-key` |
+
+Example:
+
+```bash
+curl https://api.keystonecommerce.in/api/v1/categories \
+  -H "x-api-key: <partner_api_key>"
+```
+
+## Products
+
+Returns products available for the partner.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/products` | `x-api-key` |
+| `GET` | `/products/:slug` | `x-api-key` |
+
+### List products query params
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `page` | number | No | Default `1` |
+| `limit` | number | No | Default `20`, max `100` |
+| `search` | string | No | Text search |
+| `categoryId` | string | No | Filter by category |
+| `brand` | string | No | Filter by brand |
+| `sortBy` | string | No | Default `createdAt` |
+| `sortOrder` | `asc` or `desc` | No | Default `desc` |
+
+Examples:
+
+```bash
+curl "https://api.keystonecommerce.in/api/v1/products?page=1&limit=20" \
+  -H "x-api-key: <partner_api_key>"
+```
+
+```bash
+curl https://api.keystonecommerce.in/api/v1/products/<product_slug> \
+  -H "x-api-key: <partner_api_key>"
+```
+
+## Search
+
+Searches the partner catalog.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/search` | `x-api-key` |
+
+### Search query params
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `q` | string | Yes | Search term |
+| `type` | `products`, `categories`, or `all` | No | Default `all` |
+| `limit` | number | No | Default `20`, max `50` |
+| `source` | string | No | Optional source label for analytics |
+
+Example:
+
+```bash
+curl "https://api.keystonecommerce.in/api/v1/search?q=rice&type=all&limit=20" \
+  -H "x-api-key: <partner_api_key>"
+```
+
+## Not included in this release
+
+The following capabilities are not part of this partner API release:
+
+| Area | Status |
+| --- | --- |
+| Orders | Pending |
+| Payments | Pending |
+| Coupons | Pending with orders |
+
