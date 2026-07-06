@@ -5,6 +5,24 @@ description: "API keys and customer JWT authentication"
 
 Keystone uses two authentication modes for integrations.
 
+## Credentials issued by Keystone
+
+Keystone issues two values for an integration.
+
+| Credential | Used as | Where to use it |
+| --- | --- | --- |
+| API key | `<api_key>` | `x-api-key` header on catalog requests |
+| Integration ID | `<integration_id>` | `partnerId` during OTP verification and `x-partner-id` on commerce requests |
+
+Usage terms:
+
+- Keep the API key on your server. Do not expose it in mobile apps, browser clients, logs, analytics tools, or public repositories.
+- Treat the API key as a secret. Ask Keystone to rotate it immediately if it is exposed.
+- Use the API key only for catalog reads: categories, products, product detail, and search.
+- Do not send `partnerId` on catalog requests. The API key already identifies which catalog to return.
+- Use the integration ID only where the API explicitly asks for `partnerId` or `x-partner-id`.
+- Customer access tokens are user-specific. Do not share one customer's token with another customer or background job.
+
 ## API key
 
 Catalog endpoints use the API key issued by Keystone in the `x-api-key` header.
