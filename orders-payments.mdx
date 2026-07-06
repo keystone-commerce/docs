@@ -1,0 +1,241 @@
+---
+title: "Orders and Payments"
+description: "Checkout, order history, and payment initiation"
+---
+
+Order and payment endpoints require a bearer token and `x-partner-id`. Use the integration ID issued by Keystone.
+
+```http
+Authorization: Bearer <access_token>
+x-partner-id: <integration_id>
+```
+
+Use `x-idempotency-key` when creating an order or initiating a payment. Reusing the same key with the same payload returns the existing result. Reusing it with a different payload returns a conflict.
+
+## Create order
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/orders` | Bearer token |
+
+Rules:
+
+- The customer profile must have a non-empty `name`.
+- `items` must contain at least one product.
+- `quantity` must be an integer from `1` to `9999`.
+- `alternatePhone`, when sent, must be a 10-digit Indian mobile number.
+- `paymentReturnUrl`, when sent, must be an absolute URL.
+- `couponCode` is optional and only works for coupons issued by Keystone for this integration.
+- `useWallet: true` applies the customer's eligible wallet discount.
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/orders \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>" \
+  -H "x-idempotency-key: checkout-20260706-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      {
+        "productId": "prod_key064",
+        "quantity": 1
+      }
+    ],
+    "shippingAddress": {
+      "label": "Home",
+      "line1": "221B MG Road",
+      "line2": "Near Trinity Metro",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pincode": "560001"
+    },
+    "alternatePhone": "9876543210",
+    "paymentMethod": "upi",
+    "paymentReturnUrl": "https://app.example.com/payment/return",
+    "useWallet": false
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "cmr928rlh000702s6a4yh7rls",
+    "orderNumber": "KS-20260706-8DEACA50C6",
+    "status": "PENDING_PAYMENT",
+    "subtotal": "863.56",
+    "taxAmount": "155.44",
+    "discountAmount": "0",
+    "walletDiscountAmount": "0",
+    "totalAmount": "1019",
+    "items": [
+      {
+        "id": "cmr928rm7000802s6yxjdfaan",
+        "productId": "prod_key064",
+        "productName": "10W IPX5 Portable Bluetooth Speaker - 12-Hour Battery",
+        "quantity": 1,
+        "unitPrice": "1019",
+        "totalPrice": "1019"
+      }
+    ],
+    "payment": {
+      "id": "cmr928rpo000b02s6yqmjm8he",
+      "status": "INITIATED",
+      "provider": "cashfree",
+      "providerSessionId": "<provider_session_id>"
+    },
+    "paymentSessionId": "<provider_session_id>",
+    "paymentProvider": "cashfree"
+  }
+}
+```
+
+Use `paymentSessionId` with the payment provider client SDK.
+
+## List orders
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/orders` | Bearer token |
+
+Query params:
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `page` | number | No | Default `1` |
+| `limit` | number | No | Default `20`, max `100` |
+| `status` | `PENDING_PAYMENT`, `PLACED`, `CONFIRMED`, `PACKED`, `SHIPPED`, `DELIVERED`, `CANCELLED` | No | Filter by status |
+
+Request:
+
+```bash
+curl "https://dev-api.keystonecommerce.in/api/v1/orders?page=1&limit=5" \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": "cmr928rlh000702s6a4yh7rls",
+      "orderNumber": "KS-20260706-8DEACA50C6",
+      "status": "PENDING_PAYMENT",
+      "totalAmount": "1019"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 5,
+    "totalPages": 1
+  }
+}
+```
+
+## Retrieve order
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/orders/{orderId}` | Bearer token |
+
+Request:
+
+```bash
+curl https://dev-api.keystonecommerce.in/api/v1/orders/cmr928rlh000702s6a4yh7rls \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "cmr928rlh000702s6a4yh7rls",
+    "orderNumber": "KS-20260706-8DEACA50C6",
+    "status": "DELIVERED",
+    "totalAmount": "1019",
+    "items": [
+      {
+        "id": "cmr928rm7000802s6yxjdfaan",
+        "productId": "prod_key064",
+        "productName": "10W IPX5 Portable Bluetooth Speaker - 12-Hour Battery",
+        "quantity": 1,
+        "unitPrice": "1019",
+        "totalPrice": "1019"
+      }
+    ],
+    "payment": {
+      "id": "cmr928rpo000b02s6yqmjm8he",
+      "status": "CAPTURED",
+      "provider": "cashfree",
+      "providerSessionId": "<provider_session_id>"
+    }
+  }
+}
+```
+
+## Initiate payment
+
+Order creation initiates payment automatically. Call this endpoint if you need to retry or refresh a provider session for an existing `PENDING_PAYMENT` order.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/payments/orders/{orderId}/initiate` | Bearer token |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/payments/orders/cmr928rlh000702s6a4yh7rls/initiate \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>" \
+  -H "x-idempotency-key: payment-20260706-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "method": "upi",
+    "returnUrl": "https://app.example.com/payment/return"
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "payment": {
+      "id": "cmr928rpo000b02s6yqmjm8he",
+      "orderId": "cmr928rlh000702s6a4yh7rls",
+      "amount": "1019",
+      "status": "INITIATED",
+      "provider": "cashfree",
+      "providerSessionId": "<provider_session_id>",
+      "method": "upi"
+    },
+    "provider": "cashfree",
+    "providerSessionId": "<provider_session_id>"
+  }
+}
+```
+
+Payment statuses:
+
+| Status | Meaning |
+| --- | --- |
+| `INITIATED` | Provider session has been created |
+| `CAPTURED` | Payment succeeded |
+| `FAILED` | Payment failed |
+| `USER_DROPPED` | Customer dropped from the provider checkout |

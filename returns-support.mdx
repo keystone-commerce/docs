@@ -1,0 +1,390 @@
+---
+title: "Returns and Support"
+description: "Customer support tickets, evidence uploads, and return requests"
+---
+
+Returns and support endpoints require a bearer token. Ticket and return actions also require `x-partner-id`; use the integration ID issued by Keystone.
+
+```http
+Authorization: Bearer <access_token>
+x-partner-id: <integration_id>
+```
+
+## Evidence upload flow
+
+Support and return images use signed upload URLs.
+
+1. Request signed URLs from Keystone.
+2. Upload each file with `PUT` to the returned `uploadUrl`.
+3. Send the returned `publicUrl` in `imageUrls` when creating the ticket or return.
+
+Limits:
+
+| Limit | Value |
+| --- | --- |
+| Max files per request | `5` |
+| Max file size | `15 MB` |
+| Allowed content types | `image/png`, `image/jpeg`, `image/webp`, `image/gif` |
+| Upload URL TTL | About `15 minutes` |
+
+## Create support upload URLs
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/support/uploads/signed-urls` | Bearer token |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/support/uploads/signed-urls \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "files": [
+      {
+        "fileName": "damaged-package.jpg",
+        "contentType": "image/jpeg",
+        "sizeBytes": 102400
+      }
+    ]
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "fileName": "damaged-package.jpg",
+      "objectName": "support/tickets/cmr928qjc000002s6nh2ufmo2/<generated-file-name>",
+      "uploadUrl": "<signed_upload_url>",
+      "publicUrl": "https://storage.googleapis.com/keystone-media-dev/support/tickets/cmr928qjc000002s6nh2ufmo2/<generated-file-name>",
+      "method": "PUT",
+      "headers": {
+        "Content-Type": "image/jpeg"
+      },
+      "expiresAt": "2026-07-06T10:27:32.197Z"
+    }
+  ]
+}
+```
+
+Upload the file:
+
+```bash
+curl -X PUT "<signed_upload_url>" \
+  -H "Content-Type: image/jpeg" \
+  --data-binary "@damaged-package.jpg"
+```
+
+## Create support ticket
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/support/tickets` | Bearer token |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/support/tickets \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic": "Delivery issue",
+    "detail": "The package arrived damaged.",
+    "orderId": "cmr928rlh000702s6a4yh7rls",
+    "imageUrls": [
+      "https://cdn.example.com/support/damaged-package.jpg"
+    ]
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "cmr928ssp000d02s6f20dle4l",
+    "partnerId": "<integration_id>",
+    "orderId": "cmr928rlh000702s6a4yh7rls",
+    "topic": "Delivery issue",
+    "detail": "The package arrived damaged.",
+    "imageUrls": [
+      "https://cdn.example.com/support/damaged-package.jpg"
+    ],
+    "status": "OPEN"
+  }
+}
+```
+
+## List support tickets
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/support/tickets` | Bearer token |
+
+Query params:
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `page` | number | No | Default `1` |
+| `limit` | number | No | Default `20`, max `100` |
+| `status` | `OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED` | No | Filter by status |
+| `search` | string | No | Search ticket text or order number |
+
+Request:
+
+```bash
+curl "https://dev-api.keystonecommerce.in/api/v1/support/tickets?page=1&limit=1" \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": "cmr928ssp000d02s6f20dle4l",
+      "orderId": "cmr928rlh000702s6a4yh7rls",
+      "topic": "Delivery issue",
+      "detail": "The package arrived damaged.",
+      "status": "OPEN",
+      "order": {
+        "id": "cmr928rlh000702s6a4yh7rls",
+        "orderNumber": "KS-20260706-8DEACA50C6",
+        "status": "DELIVERED",
+        "totalAmount": "1019"
+      }
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 1,
+    "totalPages": 1
+  }
+}
+```
+
+## Retrieve support ticket
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/support/tickets/{ticketId}` | Bearer token |
+
+Request:
+
+```bash
+curl https://dev-api.keystonecommerce.in/api/v1/support/tickets/cmr928ssp000d02s6f20dle4l \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>"
+```
+
+Response shape is the same as a single item from the list response.
+
+## Create return upload URLs
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/returns/uploads/signed-urls` | Bearer token |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/returns/uploads/signed-urls \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "files": [
+      {
+        "fileName": "return-evidence.jpg",
+        "contentType": "image/jpeg",
+        "sizeBytes": 204800
+      }
+    ]
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "fileName": "return-evidence.jpg",
+      "objectName": "returns/cmr928qjc000002s6nh2ufmo2/<generated-file-name>",
+      "uploadUrl": "<signed_upload_url>",
+      "publicUrl": "https://storage.googleapis.com/keystone-media-dev/returns/cmr928qjc000002s6nh2ufmo2/<generated-file-name>",
+      "method": "PUT",
+      "headers": {
+        "Content-Type": "image/jpeg"
+      },
+      "expiresAt": "2026-07-06T10:27:32.417Z"
+    }
+  ]
+}
+```
+
+## Create return request
+
+Returns can be requested only for delivered, paid orders. The requested quantity cannot exceed the remaining returnable quantity for each order item.
+
+Allowed customer requested resolutions:
+
+| Resolution | Meaning |
+| --- | --- |
+| `ORIGINAL_PAYMENT_REFUND` | Refund to original payment method |
+| `WALLET_CREDIT` | Credit the customer wallet |
+| `REPLACEMENT` | Request replacement |
+| `KEEP_ITEM_WALLET_CREDIT` | Keep item and request damage credit |
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/returns` | Bearer token |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/returns \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "orderId": "cmr928rlh000702s6a4yh7rls",
+    "reason": "Damaged item",
+    "detail": "The item was damaged on arrival and cannot be used.",
+    "requestedResolution": "ORIGINAL_PAYMENT_REFUND",
+    "items": [
+      {
+        "orderItemId": "cmr928rm7000802s6yxjdfaan",
+        "quantity": 1,
+        "reason": "Damaged in transit"
+      }
+    ],
+    "imageUrls": [
+      "https://cdn.example.com/returns/return-evidence.jpg"
+    ]
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "cmr928tj9000e02s6j5rzx13t",
+    "partnerId": "<integration_id>",
+    "orderId": "cmr928rlh000702s6a4yh7rls",
+    "status": "REQUESTED",
+    "reason": "Damaged item",
+    "detail": "The item was damaged on arrival and cannot be used.",
+    "requestedResolution": "ORIGINAL_PAYMENT_REFUND",
+    "requestedAmount": "1019",
+    "items": [
+      {
+        "id": "cmr928tk6000f02s6x1z5c60b",
+        "orderItemId": "cmr928rm7000802s6yxjdfaan",
+        "quantity": 1,
+        "reason": "Damaged in transit",
+        "requestedAmount": "1019"
+      }
+    ],
+    "refunds": []
+  }
+}
+```
+
+## List returns
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/returns` | Bearer token |
+
+Query params:
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `page` | number | No | Default `1` |
+| `limit` | number | No | Default `20`, max `100` |
+| `status` | return status | No | Filter by status |
+| `resolution` | return resolution | No | Filter by resolution |
+| `search` | string | No | Search return fields |
+
+Return statuses:
+
+```text
+REQUESTED
+UNDER_REVIEW
+NEEDS_INFO
+APPROVED
+REJECTED
+REFUND_PENDING
+REFUNDED
+REFUND_FAILED
+RESOLVED
+```
+
+Request:
+
+```bash
+curl "https://dev-api.keystonecommerce.in/api/v1/returns?page=1&limit=1" \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": "cmr928tj9000e02s6j5rzx13t",
+      "orderId": "cmr928rlh000702s6a4yh7rls",
+      "status": "REQUESTED",
+      "reason": "Damaged item",
+      "requestedResolution": "ORIGINAL_PAYMENT_REFUND",
+      "requestedAmount": "1019"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 1,
+    "totalPages": 1
+  }
+}
+```
+
+## Retrieve return
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/returns/{returnRequestId}` | Bearer token |
+
+Request:
+
+```bash
+curl https://dev-api.keystonecommerce.in/api/v1/returns/cmr928tj9000e02s6j5rzx13t \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>"
+```
+
+Response shape is the same as the create return response.

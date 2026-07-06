@@ -1,0 +1,164 @@
+---
+title: "Authentication"
+description: "API keys and customer JWT authentication"
+---
+
+Keystone uses two authentication modes for integrations.
+
+## API key
+
+Catalog endpoints use the API key issued by Keystone in the `x-api-key` header.
+
+```http
+x-api-key: <api_key>
+```
+
+The API key identifies which catalog to return. Do not send `partnerId` in catalog URLs, query params, or request bodies.
+
+Keep this key server-side. Do not ship it in mobile apps or browser clients.
+
+## Customer JWT
+
+Customer endpoints use a bearer token. Checkout, wallet, support, and return requests also require `x-partner-id`.
+
+```http
+Authorization: Bearer <access_token>
+x-partner-id: <integration_id>
+```
+
+The customer token is issued after OTP verification. Send `x-partner-id` on requests that create or read commerce data, using the integration ID issued by Keystone.
+
+## Send OTP
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/auth/otp/send` | None |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/auth/otp/send \
+  -H "Content-Type: application/json" \
+  -d '{"phone":"<customer_phone>"}'
+```
+
+Body:
+
+```json
+{
+  "phone": "<customer_phone>"
+}
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "message": "OTP sent successfully",
+    "expiresIn": 300
+  }
+}
+```
+
+## Verify OTP
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/auth/otp/verify?partnerId={partnerId}` | None |
+
+`partnerId` is required when registering a new customer. Use the integration ID issued by Keystone.
+
+Request:
+
+```bash
+curl -X POST "https://dev-api.keystonecommerce.in/api/v1/auth/otp/verify?partnerId=<integration_id>" \
+  -H "Content-Type: application/json" \
+  -d '{"phone":"<customer_phone>","code":"123456"}'
+```
+
+Body:
+
+```json
+{
+  "phone": "<customer_phone>",
+  "code": "123456"
+}
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "accessToken": "<access_token>",
+    "refreshToken": "<refresh_token>",
+    "user": {
+      "id": "cmr928qjc000002s6nh2ufmo2",
+      "phone": "<customer_phone>",
+      "name": "<customer_name>",
+      "email": "<customer_email>",
+      "role": "USER",
+      "partnerId": "<integration_id>"
+    }
+  }
+}
+```
+
+## Refresh token
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/auth/refresh` | None |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"<refresh_token>"}'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "accessToken": "<new_access_token>",
+    "refreshToken": "<new_refresh_token>"
+  }
+}
+```
+
+## Logout
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/auth/logout` | Bearer token |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/auth/logout \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"<refresh_token>"}'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "message": "Logged out successfully"
+  }
+}
+```

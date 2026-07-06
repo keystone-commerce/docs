@@ -1,0 +1,232 @@
+---
+title: "Customers"
+description: "Customer profile and address APIs"
+---
+
+Customer profile and address endpoints require a bearer token. You can also send `x-partner-id` with the integration ID used by checkout and support flows.
+
+```http
+Authorization: Bearer <access_token>
+x-partner-id: <integration_id>
+```
+
+## Get profile
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/users/me` | Bearer token |
+
+Request:
+
+```bash
+curl https://dev-api.keystonecommerce.in/api/v1/users/me \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "cmr928qjc000002s6nh2ufmo2",
+    "partnerId": "<integration_id>",
+    "phone": "<customer_phone>",
+    "name": "<customer_name>",
+    "email": "<customer_email>",
+    "role": "USER",
+    "addresses": []
+  }
+}
+```
+
+## Update profile
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `PATCH` | `/users/me` | Bearer token |
+
+Request:
+
+```bash
+curl -X PATCH https://dev-api.keystonecommerce.in/api/v1/users/me \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"<customer_name>","email":"<customer_email>"}'
+```
+
+Body:
+
+```json
+{
+  "name": "<customer_name>",
+  "email": "<customer_email>"
+}
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "cmr928qjc000002s6nh2ufmo2",
+    "partnerId": "<integration_id>",
+    "phone": "<customer_phone>",
+    "name": "<customer_name>",
+    "email": "<customer_email>",
+    "role": "USER"
+  }
+}
+```
+
+## List addresses
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/users/me/addresses` | Bearer token |
+
+Request:
+
+```bash
+curl https://dev-api.keystonecommerce.in/api/v1/users/me/addresses \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": "cmr928qzz000202s6f59zezkm",
+      "userId": "cmr928qjc000002s6nh2ufmo2",
+      "label": "Home",
+      "line1": "221B MG Road",
+      "line2": "Near Trinity Metro",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pincode": "560001",
+      "isDefault": true
+    }
+  ]
+}
+```
+
+## Create address
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/users/me/addresses` | Bearer token |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/users/me/addresses \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "label": "Home",
+    "line1": "221B MG Road",
+    "line2": "Near Trinity Metro",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "pincode": "560001",
+    "isDefault": true
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "cmr928qzz000202s6f59zezkm",
+    "label": "Home",
+    "line1": "221B MG Road",
+    "line2": "Near Trinity Metro",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "pincode": "560001",
+    "isDefault": true
+  }
+}
+```
+
+## Update address
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `PATCH` | `/users/me/addresses/{addressId}` | Bearer token |
+
+Request:
+
+```bash
+curl -X PATCH https://dev-api.keystonecommerce.in/api/v1/users/me/addresses/cmr928qzz000202s6f59zezkm \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>" \
+  -H "Content-Type: application/json" \
+  -d '{"label":"Work","line2":"Floor 4"}'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "cmr928qzz000202s6f59zezkm",
+    "label": "Work",
+    "line1": "221B MG Road",
+    "line2": "Floor 4",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "pincode": "560001",
+    "isDefault": true
+  }
+}
+```
+
+## Delete address
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `DELETE` | `/users/me/addresses/{addressId}` | Bearer token |
+
+Request:
+
+```bash
+curl -X DELETE https://dev-api.keystonecommerce.in/api/v1/users/me/addresses/cmr928qzz000202s6f59zezkm \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "cmr928qzz000202s6f59zezkm",
+    "label": "Work",
+    "line1": "221B MG Road",
+    "line2": "Floor 4",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "pincode": "560001",
+    "isDefault": true
+  }
+}
+```

@@ -1,15 +1,72 @@
 ---
-title: "Keystone Commerce API"
-description: "Partner catalog API documentation"
+title: "Keystone Commerce Partner Integration APIs"
+description: "Integration documentation"
 ---
 
-Keystone Commerce provides partner-scoped catalog APIs for reading categories, products, and search results.
+Keystone Commerce provides APIs for catalog discovery, customer login, checkout, wallet discounts, support tickets, and returns.
 
-<Card
-  title="Catalog API"
-  icon="boxes-stacked"
-  href="/catalog-api"
->
-  View authentication, endpoints, query parameters, and request examples.
-</Card>
+<CardGroup cols={2}>
+  <Card
+    title="Getting Started"
+    icon="rocket"
+    href="/getting-started"
+  >
+    Base URL, response envelope, pagination, and health checks.
+  </Card>
 
+  <Card
+    title="Authentication"
+    icon="key"
+    href="/authentication"
+  >
+    API key usage, customer OTP login, token refresh, and logout.
+  </Card>
+
+  <Card
+    title="Catalog"
+    icon="boxes-stacked"
+    href="/catalog"
+  >
+    Categories, products, product detail, and search.
+  </Card>
+
+  <Card
+    title="Customers"
+    icon="users"
+    href="/customers"
+  >
+    Customer profile and address management.
+  </Card>
+
+  <Card
+    title="Orders and Payments"
+    icon="credit-card"
+    href="/orders-payments"
+  >
+    Checkout, order history, payment session creation, and idempotency.
+  </Card>
+
+  <Card
+    title="Wallet"
+    icon="wallet"
+    href="/wallet"
+  >
+    Wallet summary, discount quote, and checkout usage.
+  </Card>
+
+  <Card
+    title="Returns and Support"
+    icon="life-ring"
+    href="/returns-support"
+  >
+    Support tickets, evidence uploads, and return requests.
+  </Card>
+
+  <Card
+    title="Errors"
+    icon="triangle-exclamation"
+    href="/errors"
+  >
+    Authentication, validation, idempotency, and common HTTP errors.
+  </Card>
+</CardGroup>

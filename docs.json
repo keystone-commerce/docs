@@ -1,17 +1,28 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Keystone Commerce",
+  "name": "Keystone Commerce Partner Integration APIs",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#FF6608",
+    "light": "#FE6F08",
+    "dark": "#A92407"
+  },
+  "appearance": {
+    "default": "light",
+    "strict": false
   },
   "favicon": "/favicon.svg",
   "navigation": {
     "pages": [
       "index",
-      "catalog-api"
+      "getting-started",
+      "authentication",
+      "catalog",
+      "customers",
+      "orders-payments",
+      "wallet",
+      "returns-support",
+      "errors"
     ]
   },
   "logo": {
@@ -22,14 +33,9 @@
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hello@keystonecommerce.in"
+        "href": "mailto:tech@keystonecommerce.in"
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "API reference",
-      "href": "/catalog-api"
-    }
+    ]
   },
   "contextual": {
     "options": [

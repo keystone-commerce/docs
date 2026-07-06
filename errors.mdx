@@ -1,0 +1,99 @@
+---
+title: "Errors"
+description: "Validation, authentication, and idempotency errors"
+---
+
+Errors use the HTTP status code and a JSON body with the failure message.
+
+## Authentication errors
+
+Missing API key:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Missing x-api-key header",
+  "timestamp": "2026-07-06T10:00:00.000Z",
+  "path": "/api/v1/products"
+}
+```
+
+Invalid or inactive API key:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid or inactive API key",
+  "timestamp": "2026-07-06T10:00:00.000Z",
+  "path": "/api/v1/products"
+}
+```
+
+Missing required `x-partner-id` header:
+
+```json
+{
+  "statusCode": 400,
+  "message": "x-partner-id header is required",
+  "timestamp": "2026-07-06T10:00:00.000Z",
+  "path": "/api/v1/orders"
+}
+```
+
+## Validation errors
+
+The API rejects unknown fields and invalid types.
+
+Example request with an invalid pincode:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/users/me/addresses \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <integration_id>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "line1": "221B MG Road",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "pincode": "5600"
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "pincode must be longer than or equal to 6 characters"
+  ],
+  "error": "Bad Request",
+  "timestamp": "2026-07-06T10:00:00.000Z",
+  "path": "/api/v1/users/me/addresses"
+}
+```
+
+## Idempotency conflicts
+
+If an `x-idempotency-key` is reused with a different checkout payload, the API returns a conflict.
+
+```json
+{
+  "statusCode": 409,
+  "message": "Checkout idempotency key has already been used with a different payload",
+  "timestamp": "2026-07-06T10:00:00.000Z",
+  "path": "/api/v1/orders"
+}
+```
+
+## Common HTTP statuses
+
+| Status | Meaning |
+| --- | --- |
+| `400` | Invalid request, missing required integration header, or failed business rule |
+| `401` | Missing or invalid authentication |
+| `404` | Resource not found for the current customer or integration context |
+| `409` | Conflict, usually an idempotency or state transition conflict |
+| `413` | Uploaded file is too large |
+| `429` | Request was rate limited |
+| `500` | Internal server error |

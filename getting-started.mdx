@@ -1,0 +1,85 @@
+---
+title: "Getting Started"
+description: "Base URL, response format, and health checks"
+---
+
+API release: `v2.0.0`  
+Updated: 2026-07-06
+
+Use the dev API while building and testing your integration.
+
+```text
+https://dev-api.keystonecommerce.in/api/v1
+```
+
+## Response envelope
+
+Successful responses use a consistent envelope.
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {}
+}
+```
+
+Paginated responses include `meta`.
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [],
+  "meta": {
+    "total": 58,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 3
+  }
+}
+```
+
+## Health checks
+
+Use liveness to check that the API process is running. Use readiness before routing traffic because it also checks dependencies.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/health/live` | None |
+| `GET` | `/health/ready` | None |
+| `GET` | `/health` | None |
+
+Request:
+
+```bash
+curl https://dev-api.keystonecommerce.in/api/v1/health/ready
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "status": "ok",
+    "database": "connected",
+    "redis": "connected",
+    "uptime": 266.203231052
+  }
+}
+```
+
+Liveness response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "status": "ok",
+    "uptime": 266.365487836
+  }
+}
+```

@@ -1,0 +1,206 @@
+---
+title: "Catalog"
+description: "Categories, products, and search"
+---
+
+Catalog endpoints use your API key to determine which catalog to return.
+
+```http
+x-api-key: <api_key>
+```
+
+## List categories
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/categories` | `x-api-key` |
+
+Request:
+
+```bash
+curl https://dev-api.keystonecommerce.in/api/v1/categories \
+  -H "x-api-key: <api_key>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": "cat_cat01",
+      "name": "Vehicle Electronics",
+      "slug": "vehicle-electronics",
+      "parentId": null,
+      "children": [
+        {
+          "id": "cat_sub0101",
+          "name": "Stereos & Head Units",
+          "slug": "sub0101-stereos-head-units",
+          "parentId": "cat_cat01"
+        },
+        {
+          "id": "cat_sub0102",
+          "name": "Cameras (Dash & Reverse)",
+          "slug": "sub0102-cameras-dash-reverse",
+          "parentId": "cat_cat01"
+        }
+      ]
+    }
+  ]
+}
+```
+
+## List products
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/products` | `x-api-key` |
+
+Query params:
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `page` | number | No | Default `1` |
+| `limit` | number | No | Default `20`, max `100` |
+| `search` | string | No | Matches product name or brand |
+| `categoryId` | string | No | Includes products in descendant categories |
+| `brand` | string | No | Case-insensitive brand filter |
+| `sortBy` | `createdAt`, `updatedAt`, `name`, `brand`, `sku` | No | Default `createdAt` |
+| `sortOrder` | `asc`, `desc` | No | Default `desc` |
+
+Request:
+
+```bash
+curl "https://dev-api.keystonecommerce.in/api/v1/products?page=1&limit=2&sortBy=name&sortOrder=asc" \
+  -H "x-api-key: <api_key>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": "prod_key064",
+      "name": "10W IPX5 Portable Bluetooth Speaker - 12-Hour Battery",
+      "slug": "10w-ipx5-portable-bluetooth-speaker-12-hour-battery-key064",
+      "brand": "keystone",
+      "sku": "KEY064",
+      "categoryId": "cat_sub0802",
+      "sellingPrice": "1019",
+      "mrp": "1199",
+      "stock": 100,
+      "images": [
+        "https://storage.googleapis.com/keystone-media-dev/products/prod_key064/01-screenshot_2026-05-04_at_6.45.42_pm.png"
+      ],
+      "isActive": true
+    }
+  ],
+  "meta": {
+    "total": 58,
+    "page": 1,
+    "limit": 2,
+    "totalPages": 29
+  }
+}
+```
+
+## Retrieve product
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/products/{slug}` | `x-api-key` |
+
+Request:
+
+```bash
+curl https://dev-api.keystonecommerce.in/api/v1/products/10w-ipx5-portable-bluetooth-speaker-12-hour-battery-key064 \
+  -H "x-api-key: <api_key>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "prod_key064",
+    "name": "10W IPX5 Portable Bluetooth Speaker - 12-Hour Battery",
+    "slug": "10w-ipx5-portable-bluetooth-speaker-12-hour-battery-key064",
+    "brand": "keystone",
+    "sku": "KEY064",
+    "categoryId": "cat_sub0802",
+    "sellingPrice": "1019",
+    "mrp": "1199",
+    "stock": 100,
+    "images": [
+      "https://storage.googleapis.com/keystone-media-dev/products/prod_key064/01-screenshot_2026-05-04_at_6.45.42_pm.png"
+    ],
+    "isActive": true
+  }
+}
+```
+
+## Search catalog
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/search` | `x-api-key` |
+
+Query params:
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `q` | string | Yes | Search term |
+| `type` | `products`, `categories`, `all` | No | Default `all` |
+| `limit` | number | No | Default `20`, max `50` |
+| `source` | string | No | Optional analytics source, for example `web`, `app`, or `docs` |
+
+Request:
+
+```bash
+curl "https://dev-api.keystonecommerce.in/api/v1/search?q=stereo&type=all&limit=2&source=web" \
+  -H "x-api-key: <api_key>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "products": [
+      {
+        "id": "prod_key001",
+        "slug": "7-inch-android-car-stereo-with-bluetooth-key001",
+        "name": "7-Inch Android Car Stereo with Bluetooth",
+        "brand": "keystone",
+        "sellingPrice": "3306.00",
+        "images": [
+          "https://storage.googleapis.com/keystone-media-dev/products/prod_key001/01-screenshot_2026-04-27_at_3.35.39_pm.png"
+        ],
+        "categoryId": "cat_sub0101",
+        "score": 1
+      }
+    ],
+    "categories": [
+      {
+        "id": "cat_sub0101",
+        "slug": "sub0101-stereos-head-units",
+        "name": "Stereos & Head Units",
+        "image": null,
+        "score": 0.85714287
+      }
+    ],
+    "totalResults": 2,
+    "topScore": 1
+  }
+}
+```
