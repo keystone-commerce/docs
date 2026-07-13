@@ -12,8 +12,6 @@ Use the dev API while building and testing your integration.
 https://dev-api.keystonecommerce.in/api/v1
 ```
 
-The `/api/v1` URL namespace remains stable across compatible API releases.
-
 ## Response envelope
 
 Successful responses use a consistent envelope.
@@ -44,7 +42,7 @@ Paginated responses include `meta`.
 
 ## Health checks
 
-Use liveness to check that the API process is running. Use readiness before routing traffic because it also checks dependencies.
+Use liveness to check the API process. Use readiness to check the API and its dependencies.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |

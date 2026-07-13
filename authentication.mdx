@@ -1,50 +1,39 @@
 ---
 title: "Authentication"
-description: "API keys and customer JWT authentication"
+description: "Partner API key and Customer access token authentication"
 ---
 
-Keystone uses two authentication modes for integrations.
+Use these terms throughout the API documentation.
 
-## Integration values issued by Keystone
+## Credentials and identifiers
 
-Keystone issues two values for an integration.
-
-| Value | Used as | Where to use it |
+| Term | Placeholder | Where to use it |
 | --- | --- | --- |
 | Partner API key | `<api_key>` | `x-api-key` header on catalog and exchange quote requests |
 | Partner ID | `<partner_id>` | `partnerId` during OTP verification and `x-partner-id` on commerce requests |
-
-Usage terms:
-
-- Keep the API key on your server. Do not expose it in mobile apps, browser clients, logs, analytics tools, or public repositories.
-- Treat the API key as a secret. Ask Keystone to rotate it immediately if it is exposed.
-- Use the Partner API key only for catalog operations: categories, products, product detail, search, and exchange quotes.
-- Do not send `partnerId` on catalog requests. The API key already identifies which catalog to return.
-- Treat the Partner ID as a non-secret identifier. Use it only where the API explicitly asks for `partnerId` or `x-partner-id`.
-- Customer access tokens are user-specific. Do not share one customer's token with another customer or background job.
+| Customer access token | `<access_token>` | `Authorization` header on customer requests |
+| Refresh token | `<refresh_token>` | Token refresh and logout request bodies |
 
 ## Partner API key
 
-Catalog endpoints use the API key issued by Keystone in the `x-api-key` header.
+Send the Partner API key in the `x-api-key` header for categories, products, product detail, search, and exchange quotes.
 
 ```http
 x-api-key: <api_key>
 ```
 
-The API key identifies which catalog to return. Do not send `partnerId` in catalog URLs, query params, or request bodies.
+The Partner API key identifies your catalog, so do not send a Partner ID on these requests. Keep the key server-side and out of logs and public repositories. Ask Keystone to rotate it if it is exposed.
 
-Keep this key server-side. Do not ship it in mobile apps or browser clients.
+## Customer access token
 
-## Customer JWT
-
-Customer endpoints use a bearer token. Checkout, wallet, support, and return requests also require `x-partner-id`.
+OTP verification issues a Customer access token and Refresh token. Send the Customer access token using the `Authorization` header shown below. Checkout, wallet, support, and return requests also require `x-partner-id`.
 
 ```http
 Authorization: Bearer <access_token>
 x-partner-id: <partner_id>
 ```
 
-The customer token is issued after OTP verification. Send `x-partner-id` on requests that create or read commerce data, using the Partner ID issued by Keystone.
+Use each Customer access token only for the customer account that received it.
 
 ## Send OTP
 
@@ -58,14 +47,6 @@ Request:
 curl -X POST https://dev-api.keystonecommerce.in/api/v1/auth/otp/send \
   -H "Content-Type: application/json" \
   -d '{"phone":"<customer_phone>"}'
-```
-
-Body:
-
-```json
-{
-  "phone": "<customer_phone>"
-}
 ```
 
 Response:
@@ -95,15 +76,6 @@ Request:
 curl -X POST "https://dev-api.keystonecommerce.in/api/v1/auth/otp/verify?partnerId=<partner_id>" \
   -H "Content-Type: application/json" \
   -d '{"phone":"<customer_phone>","code":"123456"}'
-```
-
-Body:
-
-```json
-{
-  "phone": "<customer_phone>",
-  "code": "123456"
-}
 ```
 
 Response:
@@ -158,7 +130,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/auth/logout` | Bearer token |
+| `POST` | `/auth/logout` | Customer access token |
 
 Request:
 

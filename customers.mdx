@@ -3,7 +3,7 @@ title: "Customers"
 description: "Customer profile and address APIs"
 ---
 
-Customer profile and address endpoints require a bearer token. The token already identifies the customer account, so these endpoints do not require `x-partner-id`.
+Profile and address endpoints require a Customer access token. They do not require `x-partner-id` because the token identifies the customer.
 
 ```http
 Authorization: Bearer <access_token>
@@ -13,7 +13,7 @@ Authorization: Bearer <access_token>
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/users/me` | Bearer token |
+| `GET` | `/users/me` | Customer access token |
 
 Request:
 
@@ -44,7 +44,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `PATCH` | `/users/me` | Bearer token |
+| `PATCH` | `/users/me` | Customer access token |
 
 Request:
 
@@ -53,15 +53,6 @@ curl -X PATCH https://dev-api.keystonecommerce.in/api/v1/users/me \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{"name":"<customer_name>","email":"<customer_email>"}'
-```
-
-Body:
-
-```json
-{
-  "name": "<customer_name>",
-  "email": "<customer_email>"
-}
 ```
 
 Response:
@@ -85,7 +76,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/users/me/addresses` | Bearer token |
+| `GET` | `/users/me/addresses` | Customer access token |
 
 Request:
 
@@ -120,7 +111,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/users/me/addresses` | Bearer token |
+| `POST` | `/users/me/addresses` | Customer access token |
 
 Request:
 
@@ -129,6 +120,8 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/users/me/addresses \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
+    "recipientName": "Aarav Sharma",
+    "recipientPhone": "9876543210",
     "label": "Home",
     "line1": "221B MG Road",
     "line2": "Near Trinity Metro",
@@ -143,10 +136,12 @@ Response:
 
 ```json
 {
-  "statusCode": 200,
+  "statusCode": 201,
   "message": "Success",
   "data": {
     "id": "cmr928qzz000202s6f59zezkm",
+    "recipientName": "Aarav Sharma",
+    "recipientPhone": "9876543210",
     "label": "Home",
     "line1": "221B MG Road",
     "line2": "Near Trinity Metro",
@@ -162,7 +157,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `PATCH` | `/users/me/addresses/{addressId}` | Bearer token |
+| `PATCH` | `/users/me/addresses/{addressId}` | Customer access token |
 
 Request:
 
@@ -196,7 +191,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `DELETE` | `/users/me/addresses/{addressId}` | Bearer token |
+| `DELETE` | `/users/me/addresses/{addressId}` | Customer access token |
 
 Request:
 

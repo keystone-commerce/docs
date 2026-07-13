@@ -1,6 +1,6 @@
-# Keystone Commerce Partner Integration APIs Docs
+# Keystone Commerce API Docs
 
-Mintlify documentation for Keystone Commerce integration APIs.
+Mintlify documentation for the Keystone Commerce Partner API.
 
 ## Local preview
 
@@ -21,7 +21,7 @@ mint dev
 - `docs.json` configures the Mintlify site and navigation.
 - `index.mdx` is the docs landing page.
 - `getting-started.mdx` covers the base URL, response format, and health checks.
-- `authentication.mdx` covers API keys and customer JWT auth.
+- `authentication.mdx` covers the Partner API key and Customer access token.
 - `catalog.mdx` covers categories, products, and search.
 - `customers.mdx` covers profile and address APIs.
 - `orders-payments.mdx` covers checkout and payment initiation.

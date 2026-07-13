@@ -1,9 +1,9 @@
 ---
 title: "Wallet"
-description: "Smart savings wallet balance and checkout discount quotes"
+description: "Wallet balances and checkout discount quotes"
 ---
 
-Wallet endpoints require a bearer token and `x-partner-id`. Use the Partner ID issued by Keystone.
+Wallet endpoints require a Customer access token and `x-partner-id`.
 
 ```http
 Authorization: Bearer <access_token>
@@ -12,11 +12,11 @@ x-partner-id: <partner_id>
 
 ## Quote wallet discount
 
-Use this endpoint before checkout to show the wallet discount that can apply to the current cart.
+Use this endpoint to calculate the wallet discount before checkout.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/wallet/quote` | Bearer token |
+| `POST` | `/wallet/quote` | Customer access token + `x-partner-id` |
 
 Request:
 
@@ -32,7 +32,7 @@ Response:
 
 ```json
 {
-  "statusCode": 200,
+  "statusCode": 201,
   "message": "Success",
   "data": {
     "enabled": true,
@@ -58,11 +58,11 @@ Fields:
 
 ## Get wallet
 
-Use this endpoint to show the wallet screen. It returns the quote, recent transactions, and active discount rules.
+Returns the wallet quote, recent transactions, and active discount rules.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/wallet?cartValue={amount}` | Bearer token |
+| `GET` | `/wallet?cartValue={amount}` | Customer access token + `x-partner-id` |
 
 Request:
 

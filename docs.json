@@ -1,14 +1,14 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Keystone Commerce",
+  "name": "Keystone Commerce API Docs",
   "colors": {
     "primary": "#FF6608",
-    "light": "#FE6F08",
-    "dark": "#A92407"
+    "light": "#FF6608",
+    "dark": "#FF6608"
   },
   "appearance": {
-    "default": "light",
+    "default": "dark",
     "strict": false
   },
   "favicon": "/favicon.svg",
@@ -26,8 +26,8 @@
     ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/api-docs-light.svg",
+    "dark": "/logo/api-docs-dark.svg"
   },
   "navbar": {
     "links": [
@@ -48,10 +48,5 @@
      "cursor",
      "vscode"
    ]
-  },
-  "footer": {
-    "socials": {
-      "github": "https://github.com/keystone-commerce"
-    }
   }
 }

@@ -3,7 +3,7 @@ title: "Returns and Support"
 description: "Customer support tickets, evidence uploads, and return requests"
 ---
 
-Returns and support endpoints require a bearer token. Ticket and return actions also require `x-partner-id`; use the Partner ID issued by Keystone.
+Returns and support endpoints require a Customer access token. Ticket and return actions also require `x-partner-id`.
 
 ```http
 Authorization: Bearer <access_token>
@@ -12,7 +12,7 @@ x-partner-id: <partner_id>
 
 ## Evidence upload flow
 
-Support and return images use signed upload URLs.
+Upload support and return images with signed URLs:
 
 1. Request signed URLs from Keystone.
 2. Upload each file with `PUT` to the returned `uploadUrl`.
@@ -31,7 +31,7 @@ Limits:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/support/uploads/signed-urls` | Bearer token |
+| `POST` | `/support/uploads/signed-urls` | Customer access token |
 
 Request:
 
@@ -54,7 +54,7 @@ Response:
 
 ```json
 {
-  "statusCode": 200,
+  "statusCode": 201,
   "message": "Success",
   "data": [
     {
@@ -84,7 +84,7 @@ curl -X PUT "<signed_upload_url>" \
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/support/tickets` | Bearer token |
+| `POST` | `/support/tickets` | Customer access token + `x-partner-id` |
 
 Request:
 
@@ -107,7 +107,7 @@ Response:
 
 ```json
 {
-  "statusCode": 200,
+  "statusCode": 201,
   "message": "Success",
   "data": {
     "id": "cmr928ssp000d02s6f20dle4l",
@@ -127,9 +127,9 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/support/tickets` | Bearer token |
+| `GET` | `/support/tickets` | Customer access token + `x-partner-id` |
 
-Query params:
+Query parameters:
 
 | Param | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -180,7 +180,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/support/tickets/{ticketId}` | Bearer token |
+| `GET` | `/support/tickets/{ticketId}` | Customer access token + `x-partner-id` |
 
 Request:
 
@@ -196,7 +196,7 @@ Response shape is the same as a single item from the list response.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/returns/uploads/signed-urls` | Bearer token |
+| `POST` | `/returns/uploads/signed-urls` | Customer access token |
 
 Request:
 
@@ -219,7 +219,7 @@ Response:
 
 ```json
 {
-  "statusCode": 200,
+  "statusCode": 201,
   "message": "Success",
   "data": [
     {
@@ -239,9 +239,9 @@ Response:
 
 ## Create return request
 
-Returns can be requested only for delivered, paid orders. The requested quantity cannot exceed the remaining returnable quantity for each order item.
+Returns require a delivered, paid order. Each requested quantity must not exceed the item's remaining returnable quantity.
 
-Allowed customer requested resolutions:
+Allowed resolutions:
 
 | Resolution | Meaning |
 | --- | --- |
@@ -252,7 +252,7 @@ Allowed customer requested resolutions:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/returns` | Bearer token |
+| `POST` | `/returns` | Customer access token + `x-partner-id` |
 
 Request:
 
@@ -283,7 +283,7 @@ Response:
 
 ```json
 {
-  "statusCode": 200,
+  "statusCode": 201,
   "message": "Success",
   "data": {
     "id": "cmr928tj9000e02s6j5rzx13t",
@@ -312,9 +312,9 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/returns` | Bearer token |
+| `GET` | `/returns` | Customer access token + `x-partner-id` |
 
-Query params:
+Query parameters:
 
 | Param | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -375,7 +375,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/returns/{returnRequestId}` | Bearer token |
+| `GET` | `/returns/{returnRequestId}` | Customer access token + `x-partner-id` |
 
 Request:
 

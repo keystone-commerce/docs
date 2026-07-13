@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="236" height="20" viewBox="0 0 236 20" role="img" aria-labelledby="title">
+  <title id="title">Keystone Commerce API Docs</title>
+  <g fill="#111827" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="15" font-weight="700">
+    <text x="0" y="15" textLength="150" lengthAdjust="spacing">Keystone Commerce</text>
+    <text x="170" y="15">API Docs</text>
+  </g>
+  <path d="M160 2V18" stroke="#9CA3AF" stroke-width="1"/>
+</svg>

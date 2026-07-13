@@ -3,20 +3,20 @@ title: "Orders and Payments"
 description: "Checkout, order history, and payment initiation"
 ---
 
-Order and payment endpoints require a bearer token and `x-partner-id`. Use the Partner ID issued by Keystone.
+Order and payment endpoints require a Customer access token and `x-partner-id`.
 
 ```http
 Authorization: Bearer <access_token>
 x-partner-id: <partner_id>
 ```
 
-Use `x-idempotency-key` when creating an order or initiating a payment. Reusing the same key with the same payload returns the existing result. Reusing it with a different payload returns a conflict.
+Send `x-idempotency-key` when creating an order or initiating a payment. Reuse the key only when retrying the same request; changing the payload returns a conflict.
 
 ## Create order
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/orders` | Bearer token |
+| `POST` | `/orders` | Customer access token + `x-partner-id` |
 
 Rules:
 
@@ -25,7 +25,7 @@ Rules:
 - `quantity` must be an integer from `1` to `9999`.
 - `alternatePhone`, when sent, must be a 10-digit Indian mobile number.
 - `paymentReturnUrl`, when sent, must be an absolute URL.
-- `couponCode` is optional and only works for coupons issued by Keystone for this partner.
+- `couponCode` is optional and must be issued for the partner.
 - `useWallet: true` applies the customer's eligible wallet discount.
 
 Request:
@@ -62,7 +62,7 @@ Response:
 
 ```json
 {
-  "statusCode": 200,
+  "statusCode": 201,
   "message": "Success",
   "data": {
     "id": "cmr928rlh000702s6a4yh7rls",
@@ -101,9 +101,9 @@ Use `paymentSessionId` with the payment provider client SDK.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/orders` | Bearer token |
+| `GET` | `/orders` | Customer access token + `x-partner-id` |
 
-Query params:
+Query parameters:
 
 | Param | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -146,7 +146,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/orders/{orderId}` | Bearer token |
+| `GET` | `/orders/{orderId}` | Customer access token + `x-partner-id` |
 
 Request:
 
@@ -193,7 +193,7 @@ Order creation initiates payment automatically. Call this endpoint if you need t
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/payments/orders/{orderId}/initiate` | Bearer token |
+| `POST` | `/payments/orders/{orderId}/initiate` | Customer access token + `x-partner-id` |
 
 Request:
 
@@ -213,7 +213,7 @@ Response:
 
 ```json
 {
-  "statusCode": 200,
+  "statusCode": 201,
   "message": "Success",
   "data": {
     "payment": {

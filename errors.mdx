@@ -7,18 +7,9 @@ Errors use the HTTP status code and a JSON body with the failure message.
 
 ## Authentication errors
 
-Missing API key:
+Requests without a Partner API key return `401`.
 
-```json
-{
-  "statusCode": 401,
-  "message": "Missing x-api-key header",
-  "timestamp": "2026-07-06T10:00:00.000Z",
-  "path": "/api/v1/products"
-}
-```
-
-Invalid or inactive API key:
+Invalid or inactive Partner API key:
 
 ```json
 {
@@ -51,6 +42,9 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/users/me/addresses \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
+    "recipientName": "Aarav Sharma",
+    "recipientPhone": "9876543210",
+    "label": "Home",
     "line1": "221B MG Road",
     "city": "Bengaluru",
     "state": "Karnataka",
@@ -64,9 +58,8 @@ Response:
 {
   "statusCode": 400,
   "message": [
-    "pincode must be longer than or equal to 6 characters"
+    "pincode must be a 6-digit Indian pincode"
   ],
-  "error": "Bad Request",
   "timestamp": "2026-07-06T10:00:00.000Z",
   "path": "/api/v1/users/me/addresses"
 }
@@ -89,7 +82,7 @@ If an `x-idempotency-key` is reused with a different checkout payload, the API r
 
 | Status | Meaning |
 | --- | --- |
-| `400` | Invalid request, missing required Partner ID header, or failed business rule |
+| `400` | Invalid request, missing `x-partner-id`, or failed business rule |
 | `401` | Missing or invalid authentication |
 | `404` | Resource not found for the current customer or Partner ID |
 | `409` | Conflict, usually an idempotency or state transition conflict |

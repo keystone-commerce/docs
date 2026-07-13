@@ -1,0 +1,14 @@
+:root {
+  --background-light: 255 255 255;
+  --background-dark: 0 0 0;
+  --color-background-light: rgb(255 255 255);
+  --color-background-dark: rgb(0 0 0);
+  --primary: 255 102 8;
+  --primary-light: 255 102 8;
+  --primary-dark: 255 102 8;
+}
+
+.nav-logo {
+  height: 1.25rem !important;
+  width: auto !important;
+}

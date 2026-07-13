@@ -3,7 +3,7 @@ title: "Catalog"
 description: "Categories, products, and search"
 ---
 
-Catalog endpoints use your API key to determine which catalog to return.
+Catalog endpoints use your Partner API key to determine which catalog to return.
 
 ```http
 x-api-key: <api_key>
@@ -13,7 +13,7 @@ x-api-key: <api_key>
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/categories` | `x-api-key` |
+| `GET` | `/categories` | Partner API key |
 
 Request:
 
@@ -57,9 +57,9 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/products` | `x-api-key` |
+| `GET` | `/products` | Partner API key |
 
-Query params:
+Query parameters:
 
 | Param | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -114,7 +114,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/products/{slug}` | `x-api-key` |
+| `GET` | `/products/{slug}` | Partner API key |
 
 Request:
 
@@ -151,9 +151,9 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/search` | `x-api-key` |
+| `GET` | `/search` | Partner API key |
 
-Query params:
+Query parameters:
 
 | Param | Type | Required | Notes |
 | --- | --- | --- | --- |
@@ -207,11 +207,11 @@ Response:
 
 ## Calculate exchange quote
 
-Calculate the exchange value for a product from its configured trade-in selections. The available selection fields and values depend on the product's exchange configuration.
+Calculate a product's exchange value from its configured trade-in selections. Available fields and values vary by product.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/products/{productId}/exchange-quote` | `x-api-key` |
+| `POST` | `/products/{productId}/exchange-quote` | Partner API key |
 
 Request:
 
@@ -231,7 +231,7 @@ Response:
 
 ```json
 {
-  "statusCode": 200,
+  "statusCode": 201,
   "message": "Success",
   "data": {
     "value": "450.00",
