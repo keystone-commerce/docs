@@ -3,11 +3,11 @@ title: "Wallet"
 description: "Smart savings wallet balance and checkout discount quotes"
 ---
 
-Wallet endpoints require a bearer token and `x-partner-id`. Use the integration ID issued by Keystone.
+Wallet endpoints require a bearer token and `x-partner-id`. Use the Partner ID issued by Keystone.
 
 ```http
 Authorization: Bearer <access_token>
-x-partner-id: <integration_id>
+x-partner-id: <partner_id>
 ```
 
 ## Quote wallet discount
@@ -23,7 +23,7 @@ Request:
 ```bash
 curl -X POST https://dev-api.keystonecommerce.in/api/v1/wallet/quote \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
+  -H "x-partner-id: <partner_id>" \
   -H "Content-Type: application/json" \
   -d '{"cartValue":750}'
 ```
@@ -69,7 +69,7 @@ Request:
 ```bash
 curl "https://dev-api.keystonecommerce.in/api/v1/wallet?cartValue=750" \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>"
+  -H "x-partner-id: <partner_id>"
 ```
 
 Response:

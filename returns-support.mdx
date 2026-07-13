@@ -3,11 +3,11 @@ title: "Returns and Support"
 description: "Customer support tickets, evidence uploads, and return requests"
 ---
 
-Returns and support endpoints require a bearer token. Ticket and return actions also require `x-partner-id`; use the integration ID issued by Keystone.
+Returns and support endpoints require a bearer token. Ticket and return actions also require `x-partner-id`; use the Partner ID issued by Keystone.
 
 ```http
 Authorization: Bearer <access_token>
-x-partner-id: <integration_id>
+x-partner-id: <partner_id>
 ```
 
 ## Evidence upload flow
@@ -38,7 +38,6 @@ Request:
 ```bash
 curl -X POST https://dev-api.keystonecommerce.in/api/v1/support/uploads/signed-urls \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
   -H "Content-Type: application/json" \
   -d '{
     "files": [
@@ -92,7 +91,7 @@ Request:
 ```bash
 curl -X POST https://dev-api.keystonecommerce.in/api/v1/support/tickets \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
+  -H "x-partner-id: <partner_id>" \
   -H "Content-Type: application/json" \
   -d '{
     "topic": "Delivery issue",
@@ -112,7 +111,7 @@ Response:
   "message": "Success",
   "data": {
     "id": "cmr928ssp000d02s6f20dle4l",
-    "partnerId": "<integration_id>",
+    "partnerId": "<partner_id>",
     "orderId": "cmr928rlh000702s6a4yh7rls",
     "topic": "Delivery issue",
     "detail": "The package arrived damaged.",
@@ -144,7 +143,7 @@ Request:
 ```bash
 curl "https://dev-api.keystonecommerce.in/api/v1/support/tickets?page=1&limit=1" \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>"
+  -H "x-partner-id: <partner_id>"
 ```
 
 Response:
@@ -188,7 +187,7 @@ Request:
 ```bash
 curl https://dev-api.keystonecommerce.in/api/v1/support/tickets/cmr928ssp000d02s6f20dle4l \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>"
+  -H "x-partner-id: <partner_id>"
 ```
 
 Response shape is the same as a single item from the list response.
@@ -204,7 +203,6 @@ Request:
 ```bash
 curl -X POST https://dev-api.keystonecommerce.in/api/v1/returns/uploads/signed-urls \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
   -H "Content-Type: application/json" \
   -d '{
     "files": [
@@ -261,7 +259,7 @@ Request:
 ```bash
 curl -X POST https://dev-api.keystonecommerce.in/api/v1/returns \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
+  -H "x-partner-id: <partner_id>" \
   -H "Content-Type: application/json" \
   -d '{
     "orderId": "cmr928rlh000702s6a4yh7rls",
@@ -289,7 +287,7 @@ Response:
   "message": "Success",
   "data": {
     "id": "cmr928tj9000e02s6j5rzx13t",
-    "partnerId": "<integration_id>",
+    "partnerId": "<partner_id>",
     "orderId": "cmr928rlh000702s6a4yh7rls",
     "status": "REQUESTED",
     "reason": "Damaged item",
@@ -345,7 +343,7 @@ Request:
 ```bash
 curl "https://dev-api.keystonecommerce.in/api/v1/returns?page=1&limit=1" \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>"
+  -H "x-partner-id: <partner_id>"
 ```
 
 Response:
@@ -384,7 +382,7 @@ Request:
 ```bash
 curl https://dev-api.keystonecommerce.in/api/v1/returns/cmr928tj9000e02s6j5rzx13t \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>"
+  -H "x-partner-id: <partner_id>"
 ```
 
 Response shape is the same as the create return response.

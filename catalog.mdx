@@ -204,3 +204,41 @@ Response:
   }
 }
 ```
+
+## Calculate exchange quote
+
+Calculate the exchange value for a product from its configured trade-in selections. The available selection fields and values depend on the product's exchange configuration.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/products/{productId}/exchange-quote` | `x-api-key` |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/products/<product_id>/exchange-quote \
+  -H "x-api-key: <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "selection": {
+      "capacity": "9ah",
+      "condition": "good"
+    }
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "value": "450.00",
+    "selection": {
+      "capacity": "9ah",
+      "condition": "good"
+    }
+  }
+}
+```

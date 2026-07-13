@@ -49,7 +49,6 @@ Example request with an invalid pincode:
 ```bash
 curl -X POST https://dev-api.keystonecommerce.in/api/v1/users/me/addresses \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
   -H "Content-Type: application/json" \
   -d '{
     "line1": "221B MG Road",
@@ -90,9 +89,9 @@ If an `x-idempotency-key` is reused with a different checkout payload, the API r
 
 | Status | Meaning |
 | --- | --- |
-| `400` | Invalid request, missing required integration header, or failed business rule |
+| `400` | Invalid request, missing required Partner ID header, or failed business rule |
 | `401` | Missing or invalid authentication |
-| `404` | Resource not found for the current customer or integration context |
+| `404` | Resource not found for the current customer or Partner ID |
 | `409` | Conflict, usually an idempotency or state transition conflict |
 | `413` | Uploaded file is too large |
 | `429` | Request was rate limited |

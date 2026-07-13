@@ -3,11 +3,10 @@ title: "Customers"
 description: "Customer profile and address APIs"
 ---
 
-Customer profile and address endpoints require a bearer token. You can also send `x-partner-id` with the integration ID used by checkout and support flows.
+Customer profile and address endpoints require a bearer token. The token already identifies the customer account, so these endpoints do not require `x-partner-id`.
 
 ```http
 Authorization: Bearer <access_token>
-x-partner-id: <integration_id>
 ```
 
 ## Get profile
@@ -20,8 +19,7 @@ Request:
 
 ```bash
 curl https://dev-api.keystonecommerce.in/api/v1/users/me \
-  -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>"
+  -H "Authorization: Bearer <access_token>"
 ```
 
 Response:
@@ -32,7 +30,7 @@ Response:
   "message": "Success",
   "data": {
     "id": "cmr928qjc000002s6nh2ufmo2",
-    "partnerId": "<integration_id>",
+    "partnerId": "<partner_id>",
     "phone": "<customer_phone>",
     "name": "<customer_name>",
     "email": "<customer_email>",
@@ -53,7 +51,6 @@ Request:
 ```bash
 curl -X PATCH https://dev-api.keystonecommerce.in/api/v1/users/me \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
   -H "Content-Type: application/json" \
   -d '{"name":"<customer_name>","email":"<customer_email>"}'
 ```
@@ -75,7 +72,7 @@ Response:
   "message": "Success",
   "data": {
     "id": "cmr928qjc000002s6nh2ufmo2",
-    "partnerId": "<integration_id>",
+    "partnerId": "<partner_id>",
     "phone": "<customer_phone>",
     "name": "<customer_name>",
     "email": "<customer_email>",
@@ -94,8 +91,7 @@ Request:
 
 ```bash
 curl https://dev-api.keystonecommerce.in/api/v1/users/me/addresses \
-  -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>"
+  -H "Authorization: Bearer <access_token>"
 ```
 
 Response:
@@ -131,7 +127,6 @@ Request:
 ```bash
 curl -X POST https://dev-api.keystonecommerce.in/api/v1/users/me/addresses \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
   -H "Content-Type: application/json" \
   -d '{
     "label": "Home",
@@ -174,7 +169,6 @@ Request:
 ```bash
 curl -X PATCH https://dev-api.keystonecommerce.in/api/v1/users/me/addresses/cmr928qzz000202s6f59zezkm \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
   -H "Content-Type: application/json" \
   -d '{"label":"Work","line2":"Floor 4"}'
 ```
@@ -208,8 +202,7 @@ Request:
 
 ```bash
 curl -X DELETE https://dev-api.keystonecommerce.in/api/v1/users/me/addresses/cmr928qzz000202s6f59zezkm \
-  -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>"
+  -H "Authorization: Bearer <access_token>"
 ```
 
 Response:

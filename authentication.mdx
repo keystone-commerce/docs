@@ -5,25 +5,25 @@ description: "API keys and customer JWT authentication"
 
 Keystone uses two authentication modes for integrations.
 
-## Credentials issued by Keystone
+## Integration values issued by Keystone
 
 Keystone issues two values for an integration.
 
-| Credential | Used as | Where to use it |
+| Value | Used as | Where to use it |
 | --- | --- | --- |
-| API key | `<api_key>` | `x-api-key` header on catalog requests |
-| Integration ID | `<integration_id>` | `partnerId` during OTP verification and `x-partner-id` on commerce requests |
+| Partner API key | `<api_key>` | `x-api-key` header on catalog and exchange quote requests |
+| Partner ID | `<partner_id>` | `partnerId` during OTP verification and `x-partner-id` on commerce requests |
 
 Usage terms:
 
 - Keep the API key on your server. Do not expose it in mobile apps, browser clients, logs, analytics tools, or public repositories.
 - Treat the API key as a secret. Ask Keystone to rotate it immediately if it is exposed.
-- Use the API key only for catalog reads: categories, products, product detail, and search.
+- Use the Partner API key only for catalog operations: categories, products, product detail, search, and exchange quotes.
 - Do not send `partnerId` on catalog requests. The API key already identifies which catalog to return.
-- Use the integration ID only where the API explicitly asks for `partnerId` or `x-partner-id`.
+- Treat the Partner ID as a non-secret identifier. Use it only where the API explicitly asks for `partnerId` or `x-partner-id`.
 - Customer access tokens are user-specific. Do not share one customer's token with another customer or background job.
 
-## API key
+## Partner API key
 
 Catalog endpoints use the API key issued by Keystone in the `x-api-key` header.
 
@@ -41,10 +41,10 @@ Customer endpoints use a bearer token. Checkout, wallet, support, and return req
 
 ```http
 Authorization: Bearer <access_token>
-x-partner-id: <integration_id>
+x-partner-id: <partner_id>
 ```
 
-The customer token is issued after OTP verification. Send `x-partner-id` on requests that create or read commerce data, using the integration ID issued by Keystone.
+The customer token is issued after OTP verification. Send `x-partner-id` on requests that create or read commerce data, using the Partner ID issued by Keystone.
 
 ## Send OTP
 
@@ -87,12 +87,12 @@ Response:
 | --- | --- | --- |
 | `POST` | `/auth/otp/verify?partnerId={partnerId}` | None |
 
-`partnerId` is required when registering a new customer. Use the integration ID issued by Keystone.
+`partnerId` is required for every customer OTP verification. Use the Partner ID issued for your integration.
 
 Request:
 
 ```bash
-curl -X POST "https://dev-api.keystonecommerce.in/api/v1/auth/otp/verify?partnerId=<integration_id>" \
+curl -X POST "https://dev-api.keystonecommerce.in/api/v1/auth/otp/verify?partnerId=<partner_id>" \
   -H "Content-Type: application/json" \
   -d '{"phone":"<customer_phone>","code":"123456"}'
 ```
@@ -121,7 +121,7 @@ Response:
       "name": "<customer_name>",
       "email": "<customer_email>",
       "role": "USER",
-      "partnerId": "<integration_id>"
+      "partnerId": "<partner_id>"
     }
   }
 }

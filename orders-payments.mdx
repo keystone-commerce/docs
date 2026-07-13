@@ -3,11 +3,11 @@ title: "Orders and Payments"
 description: "Checkout, order history, and payment initiation"
 ---
 
-Order and payment endpoints require a bearer token and `x-partner-id`. Use the integration ID issued by Keystone.
+Order and payment endpoints require a bearer token and `x-partner-id`. Use the Partner ID issued by Keystone.
 
 ```http
 Authorization: Bearer <access_token>
-x-partner-id: <integration_id>
+x-partner-id: <partner_id>
 ```
 
 Use `x-idempotency-key` when creating an order or initiating a payment. Reusing the same key with the same payload returns the existing result. Reusing it with a different payload returns a conflict.
@@ -25,7 +25,7 @@ Rules:
 - `quantity` must be an integer from `1` to `9999`.
 - `alternatePhone`, when sent, must be a 10-digit Indian mobile number.
 - `paymentReturnUrl`, when sent, must be an absolute URL.
-- `couponCode` is optional and only works for coupons issued by Keystone for this integration.
+- `couponCode` is optional and only works for coupons issued by Keystone for this partner.
 - `useWallet: true` applies the customer's eligible wallet discount.
 
 Request:
@@ -33,7 +33,7 @@ Request:
 ```bash
 curl -X POST https://dev-api.keystonecommerce.in/api/v1/orders \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
+  -H "x-partner-id: <partner_id>" \
   -H "x-idempotency-key: checkout-20260706-001" \
   -H "Content-Type: application/json" \
   -d '{
@@ -116,7 +116,7 @@ Request:
 ```bash
 curl "https://dev-api.keystonecommerce.in/api/v1/orders?page=1&limit=5" \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>"
+  -H "x-partner-id: <partner_id>"
 ```
 
 Response:
@@ -153,7 +153,7 @@ Request:
 ```bash
 curl https://dev-api.keystonecommerce.in/api/v1/orders/cmr928rlh000702s6a4yh7rls \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>"
+  -H "x-partner-id: <partner_id>"
 ```
 
 Response:
@@ -200,7 +200,7 @@ Request:
 ```bash
 curl -X POST https://dev-api.keystonecommerce.in/api/v1/payments/orders/cmr928rlh000702s6a4yh7rls/initiate \
   -H "Authorization: Bearer <access_token>" \
-  -H "x-partner-id: <integration_id>" \
+  -H "x-partner-id: <partner_id>" \
   -H "x-idempotency-key: payment-20260706-001" \
   -H "Content-Type: application/json" \
   -d '{
