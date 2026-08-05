@@ -101,6 +101,7 @@ Response:
       "city": "Bengaluru",
       "state": "Karnataka",
       "pincode": "560001",
+      "landmark": "Near Trinity Metro",
       "isDefault": true
     }
   ]
@@ -128,6 +129,7 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/users/me/addresses \
     "city": "Bengaluru",
     "state": "Karnataka",
     "pincode": "560001",
+    "landmark": "Near Trinity Metro",
     "isDefault": true
   }'
 ```
@@ -148,10 +150,13 @@ Response:
     "city": "Bengaluru",
     "state": "Karnataka",
     "pincode": "560001",
+    "landmark": "Near Trinity Metro",
     "isDefault": true
   }
 }
 ```
+
+`landmark` is required and accepts up to 160 characters. `alternatePhone` must be a 10-digit Indian mobile number when sent. `formattedAddress` is optional.
 
 ## Update address
 
@@ -182,6 +187,7 @@ Response:
     "city": "Bengaluru",
     "state": "Karnataka",
     "pincode": "560001",
+    "landmark": "Near Trinity Metro",
     "isDefault": true
   }
 }
@@ -214,7 +220,40 @@ Response:
     "city": "Bengaluru",
     "state": "Karnataka",
     "pincode": "560001",
+    "landmark": "Near Trinity Metro",
     "isDefault": true
+  }
+}
+```
+
+## Accept terms
+
+Record the customer's acceptance of the current terms version.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/users/me/terms-acceptance` | Customer access token |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/users/me/terms-acceptance \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"version":"2026-07-v1"}'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 201,
+  "message": "Success",
+  "data": {
+    "id": "cmr928qjc000002s6nh2ufmo2",
+    "partnerId": "<partner_id>",
+    "termsVersion": "2026-07-v1",
+    "termsAcceptedAt": "2026-08-05T10:00:00.000Z"
   }
 }
 ```

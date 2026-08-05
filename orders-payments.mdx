@@ -1,6 +1,6 @@
 ---
 title: "Orders and Payments"
-description: "Checkout, order history, and payment initiation"
+description: "Delivery, checkout, order history, and payments"
 ---
 
 Order and payment endpoints require a Customer access token and `x-partner-id`.
@@ -11,6 +11,171 @@ x-partner-id: <partner_id>
 ```
 
 Send `x-idempotency-key` when creating an order or initiating a payment. Reuse the key only when retrying the same request; changing the payload returns a conflict.
+
+## Check shipping serviceability
+
+Check delivery methods and payment options for a cart before checkout.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/shipping/serviceability` | Customer access token + `x-partner-id` |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/shipping/serviceability \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <partner_id>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "destinationPincode": "560001",
+    "items": [
+      {
+        "productId": "prod_key064",
+        "quantity": 1
+      }
+    ]
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 201,
+  "message": "Success",
+  "data": {
+    "serviceable": true,
+    "destinationPincode": "560001",
+    "message": "Delivery is available to this pincode.",
+    "reasons": [],
+    "deliveryOptions": {
+      "standard": {
+        "available": true,
+        "codAvailable": true,
+        "serviceType": "B2C SMART EXPRESS",
+        "reasons": []
+      },
+      "express": {
+        "available": false,
+        "codAvailable": false,
+        "serviceType": "B2C PRIORITY",
+        "reasons": [
+          {
+            "code": "EXPRESS_NOT_AVAILABLE",
+            "message": "Fast delivery is not available to this pincode."
+          }
+        ]
+      }
+    },
+    "paymentOptions": {
+      "prepaid": {
+        "available": true,
+        "reasons": []
+      },
+      "cod": {
+        "available": true,
+        "reasons": []
+      }
+    },
+    "availableServices": ["B2C SMART EXPRESS", "COD"],
+    "checkedAt": "2026-08-05T10:00:00.000Z"
+  }
+}
+```
+
+## Get delivery quote
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/delivery/quote` | Customer access token + `x-partner-id` |
+
+Query parameters:
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `cartValue` | number | Yes | Non-negative amount with up to two decimal places |
+| `deliveryMethod` | `STANDARD`, `EXPRESS` | No | Default `STANDARD` |
+
+Request:
+
+```bash
+curl "https://dev-api.keystonecommerce.in/api/v1/delivery/quote?cartValue=250&deliveryMethod=STANDARD" \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <partner_id>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "cartValue": "250.00",
+    "deliveryCharge": "30.00",
+    "configuredDeliveryCharge": "30.00",
+    "freeDeliveryThreshold": "299.00",
+    "amountRemainingForFreeDelivery": "49.00",
+    "isFree": false,
+    "deliveryMethod": "STANDARD",
+    "expressDeliveryEnabled": true,
+    "expressDeliveryCharge": "0.00",
+    "configuredExpressDeliveryCharge": "35.00",
+    "totalDeliveryCharge": "30.00"
+  }
+}
+```
+
+## Check COD eligibility
+
+Use `remainingPayable` from `POST /wallet/quote` as `collectableAmount`.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/orders/checkout-quote` | Customer access token + `x-partner-id` |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/orders/checkout-quote \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <partner_id>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "collectableAmount": 1019,
+    "pincode": "560001",
+    "deliveryMethod": "STANDARD",
+    "hasTradeIn": false
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 201,
+  "message": "Success",
+  "data": {
+    "paymentOptions": {
+      "prepaid": {
+        "available": true,
+        "reasons": []
+      },
+      "cod": {
+        "available": true,
+        "reasons": [],
+        "collectableAmount": "1019.00",
+        "limits": {
+          "minimumOrderAmount": "0.00",
+          "maximumOrderAmount": "5000.00",
+          "maxOpenOrdersPerCustomer": 3
+        }
+      }
+    }
+  }
+}
+```
 
 ## Create order
 
@@ -26,7 +191,11 @@ Rules:
 - `alternatePhone`, when sent, must be a 10-digit Indian mobile number.
 - `paymentReturnUrl`, when sent, must be an absolute URL.
 - `couponCode` is optional and must be issued for the partner.
-- `useWallet: true` applies the customer's eligible wallet discount.
+- `shippingAddress.landmark` is required.
+- `paymentMode` accepts `PREPAID` or `COD`. Default `PREPAID`.
+- `deliveryMethod` accepts `STANDARD` or `EXPRESS`. Default `STANDARD`.
+- `useRewardPoints: true` applies eligible Reward Points.
+- `useWalletCash: true` applies available Wallet Cash.
 
 Request:
 
@@ -49,12 +218,16 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/orders \
       "line2": "Near Trinity Metro",
       "city": "Bengaluru",
       "state": "Karnataka",
-      "pincode": "560001"
+      "pincode": "560001",
+      "landmark": "Near Trinity Metro"
     },
     "alternatePhone": "9876543210",
     "paymentMethod": "upi",
+    "paymentMode": "PREPAID",
+    "deliveryMethod": "STANDARD",
     "paymentReturnUrl": "https://app.example.com/payment/return",
-    "useWallet": false
+    "useRewardPoints": false,
+    "useWalletCash": false
   }'
 ```
 
@@ -71,7 +244,14 @@ Response:
     "subtotal": "863.56",
     "taxAmount": "155.44",
     "discountAmount": "0",
-    "walletDiscountAmount": "0",
+    "rewardPointsApplied": 0,
+    "rewardPointsValue": "0",
+    "walletCashApplied": "0",
+    "deliveryCharge": "0",
+    "expressDeliveryCharge": "0",
+    "deliveryMethod": "STANDARD",
+    "paymentMode": "PREPAID",
+    "externalPaymentAmount": "1019",
     "totalAmount": "1019",
     "items": [
       {
@@ -90,12 +270,20 @@ Response:
       "providerSessionId": "<provider_session_id>"
     },
     "paymentSessionId": "<provider_session_id>",
-    "paymentProvider": "cashfree"
+    "paymentProvider": "cashfree",
+    "paymentClientAction": {
+      "type": "cashfree_sdk",
+      "payload": {
+        "environment": "sandbox",
+        "orderId": "<provider_order_id>",
+        "paymentSessionId": "<provider_session_id>"
+      }
+    }
   }
 }
 ```
 
-Use `paymentSessionId` with the payment provider client SDK.
+Use `paymentClientAction.type` and `paymentClientAction.payload` to open the configured payment provider SDK. COD and orders with no external payment do not return a provider session.
 
 ## List orders
 
@@ -189,7 +377,7 @@ Response:
 
 ## Initiate payment
 
-Order creation initiates payment automatically. Call this endpoint if you need to retry or refresh a provider session for an existing `PENDING_PAYMENT` order.
+Order creation initiates payment automatically. Call this endpoint if you need to retry or refresh a provider session for an existing prepaid `PENDING_PAYMENT` order.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
@@ -226,7 +414,46 @@ Response:
       "method": "upi"
     },
     "provider": "cashfree",
-    "providerSessionId": "<provider_session_id>"
+    "providerSessionId": "<provider_session_id>",
+    "clientAction": {
+      "type": "cashfree_sdk",
+      "payload": {
+        "environment": "sandbox",
+        "orderId": "<provider_order_id>",
+        "paymentSessionId": "<provider_session_id>"
+      }
+    }
+  }
+}
+```
+
+Use `clientAction.type` and `clientAction.payload` to open the configured payment provider SDK.
+
+## Abandon payment
+
+Call this endpoint when the customer closes an active provider checkout. The payment moves to `USER_DROPPED` and can be retried during the reservation grace period.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/payments/orders/{orderId}/abandon` | Customer access token + `x-partner-id` |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/payments/orders/cmr928rlh000702s6a4yh7rls/abandon \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <partner_id>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 201,
+  "message": "Success",
+  "data": {
+    "abandoned": true,
+    "status": "USER_DROPPED"
   }
 }
 ```
@@ -236,6 +463,8 @@ Payment statuses:
 | Status | Meaning |
 | --- | --- |
 | `INITIATED` | Provider session has been created |
+| `PENDING_COLLECTION` | COD payment is awaiting collection |
+| `COLLECTED` | COD payment was collected after delivery |
 | `CAPTURED` | Payment succeeded |
 | `FAILED` | Payment failed |
 | `USER_DROPPED` | Customer dropped from the provider checkout |

@@ -1,18 +1,25 @@
 ---
-title: "Wallet"
-description: "Wallet balances and checkout discount quotes"
+title: "Wallet, Referrals, and Promotions"
+description: "Reward Points, Wallet Cash, referrals, and promotion redemption"
 ---
 
-Wallet endpoints require a Customer access token and `x-partner-id`.
+Wallet, referral, and promotion endpoints require a Customer access token and `x-partner-id`.
 
 ```http
 Authorization: Bearer <access_token>
 x-partner-id: <partner_id>
 ```
 
-## Quote wallet discount
+Reward Points and Wallet Cash are separate balances:
 
-Use this endpoint to calculate the wallet discount before checkout.
+| Balance | Unit | Checkout behavior |
+| --- | --- | --- |
+| Reward Points | Points | Apply as an order discount before delivery eligibility is calculated |
+| Wallet Cash | INR | Apply as payment after product and delivery charges are calculated |
+
+## Quote wallet usage
+
+Use this endpoint to calculate Reward Points, Wallet Cash, delivery charges, and the remaining payable amount before checkout.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
@@ -25,7 +32,12 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/wallet/quote \
   -H "Authorization: Bearer <access_token>" \
   -H "x-partner-id: <partner_id>" \
   -H "Content-Type: application/json" \
-  -d '{"cartValue":750}'
+  -d '{
+    "cartValue": 750,
+    "useRewardPoints": true,
+    "useWalletCash": true,
+    "deliveryMethod": "STANDARD"
+  }'
 ```
 
 Response:
@@ -36,29 +48,52 @@ Response:
   "message": "Success",
   "data": {
     "enabled": true,
-    "balance": "0.00",
     "cartValue": "750.00",
-    "eligibleDiscount": "50.00",
-    "redeemableAmount": "0.00",
-    "nextEligibleCartValue": "1000.00",
-    "earliestExpiry": null
+    "deliveryEligibleCartValue": "700.00",
+    "rewardPoints": {
+      "available": 100,
+      "reserved": 0,
+      "pending": 0,
+      "eligible": 50,
+      "applied": 50,
+      "remaining": 50,
+      "nextEligibleCartValue": "1000.00",
+      "earliestExpiry": "2026-09-30T00:00:00.000Z",
+      "rule": {
+        "id": "cmwallet-rule-001",
+        "minCartValue": "500.00",
+        "maxRewardPoints": 50
+      }
+    },
+    "walletCash": {
+      "available": "200.00",
+      "reserved": "0.00",
+      "applied": "200.00",
+      "remaining": "0.00"
+    },
+    "delivery": {
+      "cartValue": "700.00",
+      "deliveryCharge": "0.00",
+      "configuredDeliveryCharge": "30.00",
+      "freeDeliveryThreshold": "299.00",
+      "amountRemainingForFreeDelivery": "0.00",
+      "isFree": true,
+      "deliveryMethod": "STANDARD",
+      "expressDeliveryEnabled": true,
+      "expressDeliveryCharge": "0.00",
+      "configuredExpressDeliveryCharge": "35.00",
+      "totalDeliveryCharge": "0.00"
+    },
+    "remainingPayable": "500.00"
   }
 }
 ```
 
-Fields:
-
-| Field | Meaning |
-| --- | --- |
-| `balance` | Customer's usable wallet balance |
-| `eligibleDiscount` | Discount unlocked by the cart value |
-| `redeemableAmount` | Amount that can actually be redeemed now |
-| `nextEligibleCartValue` | Next cart threshold, or `null` if there is none |
-| `earliestExpiry` | Earliest expiring wallet credit, or `null` |
+`useRewardPoints` and `useWalletCash` default to `true`. `deliveryMethod` defaults to `STANDARD`.
 
 ## Get wallet
 
-Returns the wallet quote, recent transactions, and active discount rules.
+Returns both balances, recent transactions, and active Reward Point rules. Send `cartValue` to include a checkout quote.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
@@ -79,26 +114,156 @@ Response:
   "statusCode": 200,
   "message": "Success",
   "data": {
-    "enabled": true,
-    "balance": "0.00",
-    "cartValue": "750.00",
-    "eligibleDiscount": "50.00",
-    "redeemableAmount": "0.00",
-    "nextEligibleCartValue": "1000.00",
-    "earliestExpiry": null,
+    "balances": {
+      "walletCash": {
+        "available": "200.00",
+        "reserved": "0.00"
+      },
+      "rewardPoints": {
+        "available": 100,
+        "reserved": 0,
+        "pending": 0,
+        "earliestExpiry": "2026-09-30T00:00:00.000Z"
+      }
+    },
     "transactions": [],
     "discountRules": [
       {
-        "cartValue": "250.00",
-        "discountAmount": "25.00"
-      },
-      {
+        "id": "cmwallet-rule-001",
         "cartValue": "500.00",
-        "discountAmount": "50.00"
+        "maxRewardPoints": 50
       }
-    ]
+    ],
+    "quote": {
+      "enabled": true,
+      "cartValue": "750.00",
+      "deliveryEligibleCartValue": "700.00",
+      "rewardPoints": {
+        "available": 100,
+        "reserved": 0,
+        "pending": 0,
+        "eligible": 50,
+        "applied": 50,
+        "remaining": 50,
+        "nextEligibleCartValue": "1000.00",
+        "earliestExpiry": "2026-09-30T00:00:00.000Z",
+        "rule": {
+          "id": "cmwallet-rule-001",
+          "minCartValue": "500.00",
+          "maxRewardPoints": 50
+        }
+      },
+      "walletCash": {
+        "available": "200.00",
+        "reserved": "0.00",
+        "applied": "200.00",
+        "remaining": "0.00"
+      },
+      "delivery": {
+        "cartValue": "700.00",
+        "deliveryCharge": "0.00",
+        "configuredDeliveryCharge": "30.00",
+        "freeDeliveryThreshold": "299.00",
+        "amountRemainingForFreeDelivery": "0.00",
+        "isFree": true,
+        "deliveryMethod": "STANDARD",
+        "expressDeliveryEnabled": true,
+        "expressDeliveryCharge": "0.00",
+        "configuredExpressDeliveryCharge": "35.00",
+        "totalDeliveryCharge": "0.00"
+      },
+      "remainingPayable": "500.00"
+    }
   }
 }
 ```
 
-To apply wallet during checkout, send `useWallet: true` in `POST /orders`.
+To apply balances during checkout, send `useRewardPoints: true` or `useWalletCash: true` in `POST /orders`.
+
+## Get referral details
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/referrals/me` | Customer access token + `x-partner-id` |
+
+Request:
+
+```bash
+curl https://dev-api.keystonecommerce.in/api/v1/referrals/me \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <partner_id>"
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "code": "AARAV100",
+    "shareUrl": "https://app.example.com/referral/AARAV100",
+    "program": {
+      "isEnabled": true,
+      "referrerRewardPoints": 100,
+      "inviteeRewardPoints": 50,
+      "rewardExpiryDays": 60,
+      "validUntil": null
+    },
+    "stats": {
+      "invited": 2,
+      "rewarded": 2,
+      "earnedPoints": 200
+    }
+  }
+}
+```
+
+## Redeem wallet promotion
+
+Each customer can redeem a promotion code once. Successful redemptions credit Reward Points.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/wallet/promotions/redeem` | Customer access token + `x-partner-id` |
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/wallet/promotions/redeem \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <partner_id>" \
+  -H "Content-Type: application/json" \
+  -d '{"code":"WELCOME100"}'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 201,
+  "message": "Success",
+  "data": {
+    "promotion": {
+      "code": "WELCOME100",
+      "name": "Welcome reward",
+      "rewardPoints": 100
+    },
+    "redemption": {
+      "id": "cmpromotion-redemption-001",
+      "promotionId": "cmpromotion-001",
+      "userId": "cmr928qjc000002s6nh2ufmo2",
+      "walletTransactionId": "cmwallet-transaction-001",
+      "redeemedAt": "2026-08-05T10:00:00.000Z"
+    },
+    "walletTransaction": {
+      "id": "cmwallet-transaction-001",
+      "bucket": "REWARD_POINTS",
+      "type": "CREDIT",
+      "source": "PROMOTION",
+      "amount": "100",
+      "expiresAt": "2026-10-04T10:00:00.000Z"
+    }
+  }
+}
+```

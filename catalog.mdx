@@ -209,6 +209,8 @@ Response:
 
 Calculate a product's exchange value from its configured trade-in selections. Available fields and values vary by product.
 
+The six-digit `pincode` must be enabled for trade-in collection.
+
 | Method | Endpoint | Auth |
 | --- | --- | --- |
 | `POST` | `/products/{productId}/exchange-quote` | Partner API key |
@@ -220,6 +222,7 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/products/<product_id>/ex
   -H "x-api-key: <api_key>" \
   -H "Content-Type: application/json" \
   -d '{
+    "pincode": "560001",
     "selection": {
       "capacity": "9ah",
       "condition": "good"

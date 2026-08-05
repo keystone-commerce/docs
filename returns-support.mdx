@@ -241,6 +241,8 @@ Response:
 
 Returns require a delivered, paid order. Each requested quantity must not exceed the item's remaining returnable quantity.
 
+COD orders cannot use `ORIGINAL_PAYMENT_REFUND`. Select another available resolution for COD returns.
+
 Allowed resolutions:
 
 | Resolution | Meaning |
@@ -249,6 +251,8 @@ Allowed resolutions:
 | `WALLET_CREDIT` | Credit the customer wallet |
 | `REPLACEMENT` | Request replacement |
 | `KEEP_ITEM_WALLET_CREDIT` | Keep item and request damage credit |
+
+For mixed-tender orders, approved returns restore the applicable Reward Points and Wallet Cash. Any remaining original-payment amount is refunded through the payment provider when `ORIGINAL_PAYMENT_REFUND` is selected.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |

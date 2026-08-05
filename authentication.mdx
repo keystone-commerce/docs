@@ -68,14 +68,18 @@ Response:
 | --- | --- | --- |
 | `POST` | `/auth/otp/verify?partnerId={partnerId}` | None |
 
-`partnerId` is required for every customer OTP verification. Use the Partner ID issued for your integration.
+`partnerId` is required for every customer OTP verification. Use the Partner ID issued for your integration. Send `referralCode` only when the customer signs up with a referral code.
 
 Request:
 
 ```bash
 curl -X POST "https://dev-api.keystonecommerce.in/api/v1/auth/otp/verify?partnerId=<partner_id>" \
   -H "Content-Type: application/json" \
-  -d '{"phone":"<customer_phone>","code":"123456"}'
+  -d '{
+    "phone": "<customer_phone>",
+    "code": "123456",
+    "referralCode": "<referral_code>"
+  }'
 ```
 
 Response:
