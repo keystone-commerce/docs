@@ -1,6 +1,6 @@
 ---
 title: "Authentication"
-description: "Partner API key and Customer access token authentication"
+description: "Server-to-server and OTP customer authentication"
 ---
 
 Use these terms throughout the API documentation.
@@ -9,24 +9,80 @@ Use these terms throughout the API documentation.
 
 | Term | Placeholder | Where to use it |
 | --- | --- | --- |
-| Partner API key | `<api_key>` | `x-api-key` header on catalog and exchange quote requests |
+| Partner API key | `<api_key>` | `x-api-key` header on server-to-server login, catalog, and exchange quote requests |
 | Partner ID | `<partner_id>` | `partnerId` during OTP verification and `x-partner-id` on commerce requests |
+| External user ID | `<external_user_id>` | Stable customer identifier from your system during server-to-server login |
 | Customer access token | `<access_token>` | `Authorization` header on customer requests |
 | Refresh token | `<refresh_token>` | Token refresh and logout request bodies |
 
+## Server-to-server login
+
+Use server-to-server login when your backend already authenticates the customer. The same endpoint creates a customer when needed or logs in the existing customer. It returns the same Customer access token and Refresh token as OTP login.
+
+Ask Keystone to enable server-to-server login for your partner before using this endpoint. A valid Partner API key returns `403` until the method is enabled.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `POST` | `/partner/auth/session` | Partner API key |
+
+Send the Partner API key in `x-api-key`. Keystone derives the Partner ID from this key, so do not send `partnerId` in the query, headers, or request body.
+
+Request:
+
+```bash
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/partner/auth/session \
+  -H "x-api-key: <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "externalUserId": "<external_user_id>",
+    "phone": "<customer_phone>",
+    "name": "<customer_name>"
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "accessToken": "<access_token>",
+    "refreshToken": "<refresh_token>",
+    "isNewUser": true,
+    "user": {
+      "id": "cmr928qjc000002s6nh2ufmo2",
+      "phone": "<customer_phone>",
+      "name": "<customer_name>",
+      "email": null,
+      "role": "USER",
+      "partnerId": "<partner_id>"
+    }
+  }
+}
+```
+
+Use a stable External user ID that is unique within your system and never reassigned. It must contain between 1 and 128 characters without whitespace. The phone must contain exactly 10 digits, and the name must contain between 2 and 100 characters.
+
+`isNewUser` is `true` when Keystone creates a customer. It is `false` when Keystone logs in an existing customer or links an existing OTP customer with the same phone. After the link is created, both server-to-server login and OTP login resolve to the same customer.
+
+Repeat login with the same External user ID and phone. Keystone does not overwrite the existing customer profile during login. If the External user ID and phone do not match the existing identity, the API returns `409` instead of rebinding the account. Do not use a new External user ID to bypass this conflict. Contact Keystone before changing the customer identity mapping.
+
+Keep the Partner API key on your backend. Do not place it in a mobile app, browser, logs, or public repository. Send the returned tokens only to the authenticated customer over a secure connection.
+
 ## Partner API key
 
-Send the Partner API key in the `x-api-key` header for categories, products, product detail, search, and exchange quotes.
+Send the Partner API key in the `x-api-key` header for server-to-server login, categories, products, product detail, search, and exchange quotes.
 
 ```http
 x-api-key: <api_key>
 ```
 
-The Partner API key identifies your catalog, so do not send a Partner ID on these requests. Keep the key server-side and out of logs and public repositories. Ask Keystone to rotate it if it is exposed.
+The Partner API key identifies your partner account, so do not send a Partner ID on these requests. Keep the key server-side and out of logs and public repositories. Ask Keystone to rotate it if it is exposed.
 
 ## Customer access token
 
-OTP verification issues a Customer access token and Refresh token. Send the Customer access token using the `Authorization` header shown below. Checkout, wallet, support, and return requests also require `x-partner-id`.
+Server-to-server login and OTP verification issue a Customer access token and Refresh token. Send the Customer access token using the `Authorization` header shown below. Checkout, wallet, support, and return requests also require `x-partner-id`.
 
 ```http
 Authorization: Bearer <access_token>
@@ -35,7 +91,11 @@ x-partner-id: <partner_id>
 
 Use each Customer access token only for the customer account that received it.
 
-## Send OTP
+## OTP login
+
+Use OTP login when Keystone must verify the customer's phone. Server-to-server login is preferred when your backend has already authenticated the customer.
+
+### Send OTP
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
@@ -62,7 +122,7 @@ Response:
 }
 ```
 
-## Verify OTP
+### Verify OTP
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
