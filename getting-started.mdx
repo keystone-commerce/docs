@@ -14,7 +14,7 @@ https://dev-api.keystonecommerce.in/api/v1
 
 ## Response envelope
 
-Successful responses use a consistent envelope. The envelope `statusCode` is always `200`. Check the HTTP status for the result: requests that create a resource return HTTP `201`, and other successful requests return HTTP `200`.
+Successful responses use a consistent envelope. The envelope `statusCode` is always `200`, whatever the HTTP status. Successful requests return HTTP `200`, `201` or `204`, and most `POST` requests return `201` even when they create nothing. Treat any `2xx` status as success and read the result from `data`.
 
 ```json
 {

@@ -34,9 +34,11 @@ Limits:
 | Limit | Value |
 | --- | --- |
 | Max files per request | `5` |
-| Max file size | `15 MB` |
+| Max file size | `15 MB` (15,728,640 bytes), checked against the `sizeBytes` you declare |
 | Allowed content types | `image/png`, `image/jpeg`, `image/webp`, `image/gif` |
-| Upload URL TTL | About `15 minutes` |
+| Upload URL TTL | `15 minutes` |
+
+Send each file's `sizeBytes` when you request upload URLs. Keystone refuses a declared size over the limit, so check the file size before requesting a URL.
 
 ## Create support upload URLs
 
@@ -93,6 +95,13 @@ curl -X PUT "<signed_upload_url>" \
 
 ## Create support ticket
 
+| Field | Required | Rules |
+| --- | --- | --- |
+| `topic` | Yes | 2 to 120 characters |
+| `detail` | Yes | 5 to 5,000 characters |
+| `orderId` | No | An order that belongs to this customer |
+| `imageUrls` | No | Up to 5 `publicUrl` values from the upload flow |
+
 | Method | Endpoint | Auth |
 | --- | --- | --- |
 | `POST` | `/support/tickets` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
@@ -147,7 +156,6 @@ Query parameters:
 | `page` | number | No | Default `1` |
 | `limit` | number | No | Default `20`, max `100` |
 | `status` | `OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED` | No | Filter by status |
-| `search` | string | No | Search ticket text or order number |
 
 Request:
 
@@ -250,11 +258,20 @@ Response:
 
 ## Create return request
 
-Returns require a delivered, paid order. Each requested quantity must not exceed the item's remaining returnable quantity.
+Returns require a delivered order. A prepaid order must also be paid; a COD order qualifies once it is delivered. Each requested quantity must not exceed the item's remaining returnable quantity.
 
-COD orders cannot use `ORIGINAL_PAYMENT_REFUND`. Select another available resolution for COD returns.
+| Field | Required | Rules |
+| --- | --- | --- |
+| `orderId` | Yes | A delivered order that belongs to this customer |
+| `reason` | Yes | 2 to 120 characters |
+| `detail` | Yes | 5 to 5,000 characters |
+| `requestedResolution` | No | One of the resolutions below. Default `ORIGINAL_PAYMENT_REFUND` |
+| `items` | Yes | 1 to 50 items, each with `orderItemId`, `quantity` (1 to 9,999) and an optional `reason` (up to 500 characters) |
+| `imageUrls` | No | Up to 5 `publicUrl` values from the upload flow |
 
-Allowed resolutions:
+COD orders cannot use `ORIGINAL_PAYMENT_REFUND`. Because it is the default, always send `requestedResolution` for COD returns, for example `WALLET_CREDIT`.
+
+Resolutions a customer can request:
 
 | Resolution | Meaning |
 | --- | --- |
@@ -336,8 +353,7 @@ Query parameters:
 | `page` | number | No | Default `1` |
 | `limit` | number | No | Default `20`, max `100` |
 | `status` | return status | No | Filter by status |
-| `resolution` | return resolution | No | Filter by resolution |
-| `search` | string | No | Search return fields |
+| `resolution` | return resolution | No | Filter by the final `resolution` set when Keystone reviews the return. It is `null` until then, so this does not filter by `requestedResolution`. Final values can also be `NO_REFUND` or `OTHER`. |
 
 Return statuses:
 

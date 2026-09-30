@@ -3,7 +3,7 @@ title: "Catalog"
 description: "Categories, products, and search"
 ---
 
-Catalog endpoints use your Partner API key to determine which catalog to return.
+Catalog endpoints use your Partner API key to determine which catalog to return. Response examples show sample values: IDs, slugs and totals in your catalog differ, so use the values your own requests return.
 
 ```http
 x-api-key: <api_key>
@@ -67,7 +67,7 @@ Query parameters:
 | `limit` | number | No | Default `20`, max `100` |
 | `search` | string | No | Matches product name or brand |
 | `categoryId` | string | No | Includes products in descendant categories |
-| `brand` | string | No | Case-insensitive brand filter |
+| `brand` | string | No | Case-insensitive; matches any part of the brand name |
 | `sortBy` | `createdAt`, `updatedAt`, `name`, `brand`, `sku` | No | Default `createdAt` |
 | `sortOrder` | `asc`, `desc` | No | Default `desc` |
 
@@ -110,6 +110,8 @@ Response:
 }
 ```
 
+`brand` is `null` for products without a brand.
+
 ## Retrieve product
 
 | Method | Endpoint | Auth |
@@ -119,7 +121,7 @@ Response:
 Request:
 
 ```bash
-curl https://dev-api.keystonecommerce.in/api/v1/products/10w-ipx5-portable-bluetooth-speaker-12-hour-battery-key064 \
+curl https://dev-api.keystonecommerce.in/api/v1/products/<product_slug> \
   -H "x-api-key: <api_key>"
 ```
 
@@ -209,7 +211,7 @@ Response:
 
 Calculate a product's exchange value from its configured trade-in selections. Available fields and values vary by product.
 
-The six-digit `pincode` must be enabled for trade-in collection.
+Available only for products with `tradeInEnabled: true` in the product response. The six-digit `pincode` must be enabled for trade-in collection.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |

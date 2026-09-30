@@ -37,7 +37,7 @@ Keep the Partner API key on your backend. Do not place it in a mobile app, brows
 
 Use this method when your backend already authenticates the customer. Your backend sends the Partner API key and the customer's External user ID on each request. Keystone resolves the customer and enforces ownership. No access or refresh tokens are issued.
 
-Ask Keystone to enable server authentication for your partner before using this method. Until it is enabled, requests return `403`.
+Ask Keystone to enable server authentication for your partner before using this method. Until it is enabled, provisioning and customer requests return `403`.
 
 ### Step 1: Provision the customer
 
@@ -130,7 +130,7 @@ Referrals and promotion redemption do not support this method. Use a Customer ac
 | Status | Cause |
 | --- | --- |
 | `401` | Missing or invalid Partner API key, invalid or unprovisioned External user ID, or `Authorization` sent together with `x-external-user-id` |
-| `403` | Server authentication is not enabled for your partner |
+| `403` | Server authentication is not enabled for your partner, or the phone number belongs to a Keystone staff account (`This phone number belongs to a privileged account`) |
 | `409` | Provisioning details conflict with an existing customer identity |
 | `429` | A rate limit was exceeded |
 
@@ -214,7 +214,7 @@ Use each Customer access token only for the customer account that received it.
       -d '{"externalUserId":"<external_user_id>"}'
     ```
 
-    The endpoint returns `204` with no body, including for unknown External user IDs.
+    The endpoint returns `204` with no body, including for unknown External user IDs. It returns `401` if server authentication is not enabled for your partner.
 
     Session creation and revocation share the provisioning rate limits: 10 per minute per External user ID and 600 per minute per partner.
   </Accordion>
@@ -292,7 +292,7 @@ Use each Customer access token only for the customer account that received it.
     }
     ```
 
-    OTP send and verify each allow 5 requests per minute.
+    OTP send allows 3 requests per phone number per minute, and 5 per minute from one IP address. OTP verify allows 5 requests per minute.
   </Accordion>
 
   <Accordion title="Refresh and log out" icon="rotate">
@@ -326,6 +326,8 @@ Use each Customer access token only for the customer account that received it.
       }
     }
     ```
+
+    A refreshed access token has the same lifetime as the login that issued it: one hour for server-to-server session login.
 
     Each Refresh token works once. Replace both stored tokens with the new pair, and send only one refresh request at a time per customer.
 

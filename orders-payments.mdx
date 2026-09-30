@@ -21,11 +21,16 @@ x-partner-id: <partner_id>
 
 Examples on this page use a Customer access token. With the Partner API key and External user ID method, replace the `Authorization` and `x-partner-id` headers with `x-api-key` and `x-external-user-id`.
 
-Send `x-idempotency-key` when creating an order or initiating a payment. Reuse the key only when retrying the same request; changing the payload returns a conflict.
+Send `x-idempotency-key` when creating an order or initiating a payment, and reuse a key only to retry the same request.
+
+- **Orders:** the same key with the same order returns the original order instead of creating a second one. The same key with different items, address, alternate phone, coupon, payment mode, delivery method or balance options returns `409` `Checkout idempotency key has already been used with a different payload`. `paymentReturnUrl` is not compared.
+- **Payments:** while a payment session is active, initiating again returns that same session, whatever the key or body. Once the attempt has ended (for example after abandon), reusing its key returns `409` `Payment attempt idempotency key has already been used`, so send a new key for each new attempt.
 
 ## Check shipping serviceability
 
 Check delivery methods and payment options for a cart before checkout.
+
+`express.available` reports courier coverage only. Offer express delivery only when the [delivery quote](#get-delivery-quote) also returns `expressDeliveryEnabled: true`; otherwise express requests return `400` `Express delivery is not available`.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
@@ -42,7 +47,7 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/shipping/serviceability 
     "destinationPincode": "560001",
     "items": [
       {
-        "productId": "prod_key064",
+        "productId": "<product_id>",
         "quantity": 1
       }
     ]
@@ -158,7 +163,7 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/orders/checkout-quote \
   -d '{
     "items": [
       {
-        "productId": "prod_key064",
+        "productId": "<product_id>",
         "quantity": 1
       }
     ],
@@ -206,8 +211,8 @@ Request fields:
 | `pincode` | Yes | 6-digit delivery pincode |
 | `deliveryMethod` | Yes | `STANDARD` or `EXPRESS` |
 | `couponCode` | No | Coupon to apply before checking eligibility |
-| `useRewardPoints` | No | Apply eligible Reward Points |
-| `useWalletCash` | No | Apply available Wallet Cash |
+| `useRewardPoints` | No | Apply eligible Reward Points. Default `false` |
+| `useWalletCash` | No | Apply available Wallet Cash. Default `false` |
 
 `totalCollectableAmount` is the amount the customer pays on delivery, including `codCharge`.
 
@@ -234,7 +239,7 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/orders/available-coupons
     "subtotal": 1019,
     "items": [
       {
-        "productId": "prod_key064",
+        "productId": "<product_id>",
         "quantity": 1
       }
     ]
@@ -281,7 +286,7 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/orders/coupon-quote \
     "subtotal": 1019,
     "items": [
       {
-        "productId": "prod_key064",
+        "productId": "<product_id>",
         "quantity": 1
       }
     ]
@@ -324,18 +329,19 @@ A coupon that is invalid, expired, fully used, or not applicable to the cart ret
 
 Rules:
 
-- The customer profile must have a non-empty `name`.
+- When `shippingAddress.recipientName` is not sent, the customer profile must have a non-empty `name`.
 - `items` must contain at least one product.
 - `productVariantId` is required for products with variants. Use the `variants` returned by the product endpoints.
 - `quantity` must be an integer from `1` to `9999`.
-- `alternatePhone`, when sent, must be a 10-digit Indian mobile number.
+- `alternatePhone`, when sent, must be 10 digits.
 - `paymentReturnUrl`, when sent, must be an absolute URL.
 - `couponCode` is optional. Check it first with `POST /orders/coupon-quote`.
 - `shippingAddress.landmark` is required.
 - `paymentMode` accepts `PREPAID` or `COD`. Default `PREPAID`.
 - `deliveryMethod` accepts `STANDARD` or `EXPRESS`. Default `STANDARD`.
-- `useRewardPoints: true` applies eligible Reward Points.
-- `useWalletCash: true` applies available Wallet Cash.
+- `useRewardPoints: true` applies eligible Reward Points. Default `false`.
+- `useWalletCash: true` applies available Wallet Cash. Default `false`.
+- Send the same `useRewardPoints` and `useWalletCash` values you used for the quote. `POST /wallet/quote` defaults both to `true`, and order creation defaults both to `false`, so leaving them out gives a different amount.
 
 Request:
 
@@ -348,7 +354,7 @@ curl -X POST https://dev-api.keystonecommerce.in/api/v1/orders \
   -d '{
     "items": [
       {
-        "productId": "prod_key064",
+        "productId": "<product_id>",
         "quantity": 1
       }
     ],
@@ -396,7 +402,7 @@ Response:
     "items": [
       {
         "id": "cmr928rm7000802s6yxjdfaan",
-        "productId": "prod_key064",
+        "productId": "<product_id>",
         "productName": "10W IPX5 Portable Bluetooth Speaker - 12-Hour Battery",
         "quantity": 1,
         "unitPrice": "1019",
@@ -498,7 +504,7 @@ Response:
     "items": [
       {
         "id": "cmr928rm7000802s6yxjdfaan",
-        "productId": "prod_key064",
+        "productId": "<product_id>",
         "productName": "10W IPX5 Portable Bluetooth Speaker - 12-Hour Battery",
         "quantity": 1,
         "unitPrice": "1019",
@@ -628,7 +634,7 @@ Use `clientAction.type` and `clientAction.payload` to open the configured paymen
 
 ## Abandon payment
 
-Call this endpoint when the customer closes an active provider checkout. The payment moves to `USER_DROPPED` and can be retried during the reservation grace period.
+Call this endpoint when the customer closes an active provider checkout. The payment moves to `USER_DROPPED` and can be retried with [Initiate payment](#initiate-payment) during the 2-minute grace period. A retry sent within a few seconds of abandoning can return `409` `The previous payment session is still closing. Please retry shortly.`; wait a few seconds and retry.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |

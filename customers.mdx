@@ -172,17 +172,19 @@ Required fields: `recipientName`, `recipientPhone`, `label`, `line1`, `city`, `s
 | Field | Notes |
 | --- | --- |
 | `recipientName` | Up to 80 characters |
-| `recipientPhone` | 10-digit Indian mobile number |
-| `alternatePhone` | Optional 10-digit Indian mobile number |
+| `recipientPhone` | 10 digits |
+| `alternatePhone` | Optional, 10 digits |
 | `label` | Up to 40 characters |
 | `line1` | Up to 160 characters |
 | `line2` | Optional, up to 240 characters |
-| `stateCode` | Optional 2-digit GST state code |
+| `city` | Up to 80 characters |
+| `state` | An Indian state or union territory name, up to 80 characters, for example `Karnataka` |
+| `stateCode` | Optional 2-digit GST state code. It must match `state`, for example `29` for Karnataka |
 | `pincode` | 6-digit Indian pincode |
 | `landmark` | Up to 160 characters, not blank |
 | `googlePlaceId`, `latitude`, `longitude`, `formattedAddress` | Optional location details. `formattedAddress` accepts up to 500 characters. |
 | `deliveryInstructions` | Optional, up to 500 characters |
-| `isDefault` | Optional. The first address is always the default. |
+| `isDefault` | Optional. The first address is always the default. To change the default, set `isDefault: true` on another address; `isDefault: false` on the current default has no effect. Deleting the default address makes the most recently updated remaining address the default. |
 
 ## Update address
 

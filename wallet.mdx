@@ -100,7 +100,7 @@ Response:
 }
 ```
 
-`useRewardPoints` and `useWalletCash` default to `true`. `deliveryMethod` defaults to `STANDARD`. Send `deliveryEligibilityCartValue` when the cart value for delivery eligibility differs from `cartValue`. It defaults to `cartValue`, and Keystone subtracts applied Reward Points from it before checking free delivery.
+`useRewardPoints` and `useWalletCash` default to `true` here but to `false` in `POST /orders`, so send both explicitly. `deliveryMethod` defaults to `STANDARD`. Send `deliveryEligibilityCartValue` when the cart value for delivery eligibility differs from `cartValue`. It defaults to `cartValue`, and Keystone subtracts applied Reward Points from it before checking free delivery.
 
 ## Get wallet
 
@@ -229,6 +229,8 @@ Response:
   }
 }
 ```
+
+`shareUrl` is `null` while the referral program is off (`program.isEnabled: false`).
 
 ## Redeem wallet promotion
 

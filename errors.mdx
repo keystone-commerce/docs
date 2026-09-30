@@ -121,7 +121,7 @@ If an `x-idempotency-key` is reused with a different checkout payload, the API r
 | `403` | Authenticated, but the action is not allowed, for example when server authentication is not enabled |
 | `404` | Resource not found for the current customer or Partner ID |
 | `409` | Conflict, usually an idempotency, identity, or state transition conflict |
-| `413` | Uploaded file is too large |
+| `413` | Request body is larger than 1 MB. An evidence image over the size limit returns `400` instead. |
 | `429` | Request was rate limited |
 | `500` | Internal server error |
 | `503` | A required dependency is temporarily unavailable. Retry with backoff. |
