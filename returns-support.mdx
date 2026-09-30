@@ -3,12 +3,23 @@ title: "Returns and Support"
 description: "Customer support tickets, evidence uploads, and return requests"
 ---
 
-Returns and support endpoints require a Customer access token. Ticket and return actions also require `x-partner-id`.
+Returns and support endpoints accept either customer authentication method described in [Authentication](/authentication). With a Customer access token, ticket and return actions also require `x-partner-id`; upload URL requests do not.
 
-```http
+<CodeGroup>
+
+```http Partner API key and External user ID
+x-api-key: <api_key>
+x-external-user-id: <external_user_id>
+```
+
+```http Customer access token
 Authorization: Bearer <access_token>
 x-partner-id: <partner_id>
 ```
+
+</CodeGroup>
+
+Examples on this page use a Customer access token. With the Partner API key and External user ID method, replace the `Authorization` and `x-partner-id` headers with `x-api-key` and `x-external-user-id`.
 
 ## Evidence upload flow
 
@@ -31,7 +42,7 @@ Limits:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/support/uploads/signed-urls` | Customer access token |
+| `POST` | `/support/uploads/signed-urls` | Partner API key + External user ID, or Customer access token |
 
 Request:
 
@@ -54,7 +65,7 @@ Response:
 
 ```json
 {
-  "statusCode": 201,
+  "statusCode": 200,
   "message": "Success",
   "data": [
     {
@@ -84,7 +95,7 @@ curl -X PUT "<signed_upload_url>" \
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/support/tickets` | Customer access token + `x-partner-id` |
+| `POST` | `/support/tickets` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
 
 Request:
 
@@ -107,7 +118,7 @@ Response:
 
 ```json
 {
-  "statusCode": 201,
+  "statusCode": 200,
   "message": "Success",
   "data": {
     "id": "cmr928ssp000d02s6f20dle4l",
@@ -127,7 +138,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/support/tickets` | Customer access token + `x-partner-id` |
+| `GET` | `/support/tickets` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
 
 Query parameters:
 
@@ -180,7 +191,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/support/tickets/{ticketId}` | Customer access token + `x-partner-id` |
+| `GET` | `/support/tickets/{ticketId}` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
 
 Request:
 
@@ -196,7 +207,7 @@ Response shape is the same as a single item from the list response.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/returns/uploads/signed-urls` | Customer access token |
+| `POST` | `/returns/uploads/signed-urls` | Partner API key + External user ID, or Customer access token |
 
 Request:
 
@@ -219,7 +230,7 @@ Response:
 
 ```json
 {
-  "statusCode": 201,
+  "statusCode": 200,
   "message": "Success",
   "data": [
     {
@@ -256,7 +267,7 @@ For mixed-tender orders, approved returns restore the applicable Reward Points a
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/returns` | Customer access token + `x-partner-id` |
+| `POST` | `/returns` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
 
 Request:
 
@@ -287,7 +298,7 @@ Response:
 
 ```json
 {
-  "statusCode": 201,
+  "statusCode": 200,
   "message": "Success",
   "data": {
     "id": "cmr928tj9000e02s6j5rzx13t",
@@ -316,7 +327,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/returns` | Customer access token + `x-partner-id` |
+| `GET` | `/returns` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
 
 Query parameters:
 
@@ -379,7 +390,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/returns/{returnRequestId}` | Customer access token + `x-partner-id` |
+| `GET` | `/returns/{returnRequestId}` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
 
 Request:
 

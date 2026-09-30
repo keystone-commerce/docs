@@ -3,17 +3,28 @@ title: "Customers"
 description: "Customer profile and address APIs"
 ---
 
-Profile and address endpoints require a Customer access token. They do not require `x-partner-id` because the token identifies the customer.
+Profile and address endpoints accept either customer authentication method described in [Authentication](/authentication). With a Customer access token, `x-partner-id` is not required because the token identifies the customer.
 
-```http
+<CodeGroup>
+
+```http Partner API key and External user ID
+x-api-key: <api_key>
+x-external-user-id: <external_user_id>
+```
+
+```http Customer access token
 Authorization: Bearer <access_token>
 ```
+
+</CodeGroup>
+
+Examples on this page use a Customer access token. With the Partner API key and External user ID method, replace the `Authorization` header with `x-api-key` and `x-external-user-id`.
 
 ## Get profile
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/users/me` | Customer access token |
+| `GET` | `/users/me` | Partner API key + External user ID, or Customer access token |
 
 Request:
 
@@ -44,7 +55,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `PATCH` | `/users/me` | Customer access token |
+| `PATCH` | `/users/me` | Partner API key + External user ID, or Customer access token |
 
 Request:
 
@@ -76,7 +87,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/users/me/addresses` | Customer access token |
+| `GET` | `/users/me/addresses` | Partner API key + External user ID, or Customer access token |
 
 Request:
 
@@ -112,7 +123,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/users/me/addresses` | Customer access token |
+| `POST` | `/users/me/addresses` | Partner API key + External user ID, or Customer access token |
 
 Request:
 
@@ -138,7 +149,7 @@ Response:
 
 ```json
 {
-  "statusCode": 201,
+  "statusCode": 200,
   "message": "Success",
   "data": {
     "id": "cmr928qzz000202s6f59zezkm",
@@ -156,13 +167,28 @@ Response:
 }
 ```
 
-`landmark` is required and accepts up to 160 characters. `alternatePhone` must be a 10-digit Indian mobile number when sent. `formattedAddress` is optional.
+Required fields: `recipientName`, `recipientPhone`, `label`, `line1`, `city`, `state`, `pincode`, and `landmark`.
+
+| Field | Notes |
+| --- | --- |
+| `recipientName` | Up to 80 characters |
+| `recipientPhone` | 10-digit Indian mobile number |
+| `alternatePhone` | Optional 10-digit Indian mobile number |
+| `label` | Up to 40 characters |
+| `line1` | Up to 160 characters |
+| `line2` | Optional, up to 240 characters |
+| `stateCode` | Optional 2-digit GST state code |
+| `pincode` | 6-digit Indian pincode |
+| `landmark` | Up to 160 characters, not blank |
+| `googlePlaceId`, `latitude`, `longitude`, `formattedAddress` | Optional location details. `formattedAddress` accepts up to 500 characters. |
+| `deliveryInstructions` | Optional, up to 500 characters |
+| `isDefault` | Optional. The first address is always the default. |
 
 ## Update address
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `PATCH` | `/users/me/addresses/{addressId}` | Customer access token |
+| `PATCH` | `/users/me/addresses/{addressId}` | Partner API key + External user ID, or Customer access token |
 
 Request:
 
@@ -197,7 +223,7 @@ Response:
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `DELETE` | `/users/me/addresses/{addressId}` | Customer access token |
+| `DELETE` | `/users/me/addresses/{addressId}` | Partner API key + External user ID, or Customer access token |
 
 Request:
 
@@ -232,7 +258,7 @@ Record the customer's acceptance of the current terms version.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/users/me/terms-acceptance` | Customer access token |
+| `POST` | `/users/me/terms-acceptance` | Partner API key + External user ID, or Customer access token |
 
 Request:
 
@@ -247,7 +273,7 @@ Response:
 
 ```json
 {
-  "statusCode": 201,
+  "statusCode": 200,
   "message": "Success",
   "data": {
     "id": "cmr928qjc000002s6nh2ufmo2",

@@ -1,36 +1,56 @@
 ---
 title: "Authentication"
-description: "Server-to-server and OTP customer authentication"
+description: "Partner API key with External user ID, plus token-based customer login"
 ---
 
-Use these terms throughout the API documentation.
+Keystone supports three ways to authenticate customer requests. Use **Partner API key and External user ID** for new integrations. Your backend authenticates the customer and calls Keystone on their behalf, so you do not manage customer access or refresh tokens.
+
+| Method | Use it when | Customer tokens |
+| --- | --- | --- |
+| [Partner API key and External user ID](#partner-api-key-and-external-user-id) (recommended) | Your backend authenticates the customer and makes every customer request | None |
+| Server-to-server session login ([other methods](#other-authentication-methods)) | Your app calls Keystone directly with a customer token issued through your backend | Access and refresh tokens |
+| OTP login ([other methods](#other-authentication-methods)) | Keystone must verify the customer's phone | Access and refresh tokens |
 
 ## Credentials and identifiers
 
 | Term | Placeholder | Where to use it |
 | --- | --- | --- |
-| Partner API key | `<api_key>` | `x-api-key` header on server-to-server login, catalog, and exchange quote requests |
-| Partner ID | `<partner_id>` | `partnerId` during OTP verification and `x-partner-id` on commerce requests |
-| External user ID | `<external_user_id>` | Stable customer identifier from your system during server-to-server login |
-| Customer access token | `<access_token>` | `Authorization` header on customer requests |
+| Partner API key | `<api_key>` | `x-api-key` header on every server-to-server request |
+| External user ID | `<external_user_id>` | Stable customer identifier from your system, sent in `x-external-user-id` or in the provisioning request body |
+| Partner ID | `<partner_id>` | `partnerId` during OTP verification and `x-partner-id` on token-based customer requests |
+| Customer access token | `<access_token>` | `Authorization` header on token-based customer requests |
 | Refresh token | `<refresh_token>` | Token refresh and logout request bodies |
 
-## Server-to-server login
+## Partner API key
 
-Use server-to-server login when your backend already authenticates the customer. The same endpoint creates a customer when needed or logs in the existing customer. It returns the same Customer access token and Refresh token as OTP login.
+The Partner API key identifies your partner account. Send it in the `x-api-key` header.
 
-Ask Keystone to enable server-to-server login for your partner before using this endpoint. A valid Partner API key returns `403` until the method is enabled.
+```http
+x-api-key: <api_key>
+```
+
+Catalog, search, and exchange quote requests need only this header. Keystone derives your Partner ID from the key, so do not send a Partner ID with it.
+
+Keep the Partner API key on your backend. Do not place it in a mobile app, browser, logs, or public repository. Anyone holding the key can act as any of your customers, so ask Keystone to rotate it immediately if it is exposed.
+
+## Partner API key and External user ID
+
+Use this method when your backend already authenticates the customer. Your backend sends the Partner API key and the customer's External user ID on each request. Keystone resolves the customer and enforces ownership. No access or refresh tokens are issued.
+
+Ask Keystone to enable server authentication for your partner before using this method. Until it is enabled, requests return `403`.
+
+### Step 1: Provision the customer
+
+Provision each customer once before making requests for them. Repeating the call for the same customer is safe and returns the same account.
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/partner/auth/session` | Partner API key |
-
-Send the Partner API key in `x-api-key`. Keystone derives the Partner ID from this key, so do not send `partnerId` in the query, headers, or request body.
+| `POST` | `/partner/users/resolve` | Partner API key |
 
 Request:
 
 ```bash
-curl -X POST https://dev-api.keystonecommerce.in/api/v1/partner/auth/session \
+curl -X POST https://dev-api.keystonecommerce.in/api/v1/partner/users/resolve \
   -H "x-api-key: <api_key>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -47,42 +67,80 @@ Response:
   "statusCode": 200,
   "message": "Success",
   "data": {
-    "accessToken": "<access_token>",
-    "refreshToken": "<refresh_token>",
-    "isNewUser": true,
     "user": {
       "id": "cmr928qjc000002s6nh2ufmo2",
-      "phone": "<customer_phone>",
       "name": "<customer_name>",
-      "email": null,
-      "role": "USER",
-      "partnerId": "<partner_id>"
-    }
+      "phone": "<customer_phone>"
+    },
+    "isNewUser": true,
+    "externalUserId": "<external_user_id>"
   }
 }
 ```
 
-Use a stable External user ID that is unique within your system and never reassigned. It must contain between 1 and 128 characters without whitespace. The phone must contain exactly 10 digits, and the name must contain between 2 and 100 characters.
+All three fields are required:
 
-`isNewUser` is `true` when Keystone creates a customer. It is `false` when Keystone logs in an existing customer or links an existing OTP customer with the same phone. After the link is created, both server-to-server login and OTP login resolve to the same customer.
+| Field | Rules |
+| --- | --- |
+| `externalUserId` | 1 to 128 characters, no whitespace. Use an ID that is unique within your system and never reassigned. |
+| `phone` | Exactly 10 digits |
+| `name` | 2 to 100 characters, not blank |
 
-Repeat login with the same External user ID and phone. Keystone does not overwrite the existing customer profile during login. If the External user ID and phone do not match the existing identity, the API returns `409` instead of rebinding the account. Do not use a new External user ID to bypass this conflict. Contact Keystone before changing the customer identity mapping.
+`isNewUser` is `true` when Keystone creates a customer. It is `false` when the customer already exists or when Keystone links an existing OTP customer with the same phone. Provisioning does not overwrite an existing customer profile.
 
-Keep the Partner API key on your backend. Do not place it in a mobile app, browser, logs, or public repository. Send the returned tokens only to the authenticated customer over a secure connection.
+If the External user ID and phone do not match the existing identity, the API returns `409` instead of rebinding the account. Do not use a new External user ID to bypass this conflict. Contact Keystone before changing a customer identity mapping.
 
-## Partner API key
+### Step 2: Make customer requests
 
-Send the Partner API key in the `x-api-key` header for server-to-server login, categories, products, product detail, search, and exchange quotes.
+Send both headers on every customer request. Do not send `Authorization` or `x-partner-id`.
 
 ```http
 x-api-key: <api_key>
+x-external-user-id: <external_user_id>
 ```
 
-The Partner API key identifies your partner account, so do not send a Partner ID on these requests. Keep the key server-side and out of logs and public repositories. Ask Keystone to rotate it if it is exposed.
+Request:
 
-## Customer access token
+```bash
+curl "https://dev-api.keystonecommerce.in/api/v1/orders?page=1&limit=5" \
+  -H "x-api-key: <api_key>" \
+  -H "x-external-user-id: <external_user_id>"
+```
 
-Server-to-server login and OTP verification issue a Customer access token and Refresh token. Send the Customer access token using the `Authorization` header shown below. Checkout, wallet, support, and return requests also require `x-partner-id`.
+Name and phone are not required after provisioning. Request bodies, ownership checks, and `x-idempotency-key` rules are the same as for token-based requests.
+
+This method is supported on these endpoints:
+
+| Area | Endpoints |
+| --- | --- |
+| Profile | `/users/me`, `/users/me/terms-acceptance` |
+| Addresses | `/users/me/addresses` |
+| Orders | `/orders`, including checkout quotes, coupons, and invoices |
+| Shipping | `/shipping/serviceability` |
+| Wallet | `/wallet`, `/wallet/quote` |
+| Payments | `/payments/orders/{orderId}/initiate`, `/payments/orders/{orderId}/abandon` |
+| Delivery | `/delivery/quote` |
+| Support | `/support/tickets`, `/support/uploads/signed-urls` |
+| Returns | `/returns`, `/returns/uploads/signed-urls` |
+
+Referrals and promotion redemption do not support this method. Use a Customer access token for those endpoints.
+
+### Errors
+
+| Status | Cause |
+| --- | --- |
+| `401` | Missing or invalid Partner API key, invalid or unprovisioned External user ID, or `Authorization` sent together with `x-external-user-id` |
+| `403` | Server authentication is not enabled for your partner |
+| `409` | Provisioning details conflict with an existing customer identity |
+| `429` | A rate limit was exceeded |
+
+Unknown External user IDs never create a customer. Provision the customer first.
+
+## Other authentication methods
+
+Use these methods when your app must hold a customer token and call Keystone directly. Both methods issue a Customer access token and Refresh token.
+
+Send the Customer access token in the `Authorization` header. Every token-based customer request except profile, address, and upload URL requests also requires `x-partner-id`.
 
 ```http
 Authorization: Bearer <access_token>
@@ -91,128 +149,217 @@ x-partner-id: <partner_id>
 
 Use each Customer access token only for the customer account that received it.
 
-## OTP login
+<AccordionGroup>
+  <Accordion title="Server-to-server session login" icon="server">
+    Use server-to-server session login when your backend authenticates the customer and your app needs its own customer token. The endpoint creates the customer when needed or logs in the existing customer. It shares the External user ID mapping with the Partner API key and External user ID method.
 
-Use OTP login when Keystone must verify the customer's phone. Server-to-server login is preferred when your backend has already authenticated the customer.
+    Server authentication must be enabled for your partner. A valid Partner API key returns `403` until it is enabled.
 
-### Send OTP
+    **Create a session**
 
-| Method | Endpoint | Auth |
-| --- | --- | --- |
-| `POST` | `/auth/otp/send` | None |
+    | Method | Endpoint | Auth |
+    | --- | --- | --- |
+    | `POST` | `/partner/auth/session` | Partner API key |
 
-Request:
+    Request:
 
-```bash
-curl -X POST https://dev-api.keystonecommerce.in/api/v1/auth/otp/send \
-  -H "Content-Type: application/json" \
-  -d '{"phone":"<customer_phone>"}'
-```
+    ```bash
+    curl -X POST https://dev-api.keystonecommerce.in/api/v1/partner/auth/session \
+      -H "x-api-key: <api_key>" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "externalUserId": "<external_user_id>",
+        "phone": "<customer_phone>",
+        "name": "<customer_name>"
+      }'
+    ```
 
-Response:
+    Response:
 
-```json
-{
-  "statusCode": 200,
-  "message": "Success",
-  "data": {
-    "message": "OTP sent successfully",
-    "expiresIn": 300
-  }
-}
-```
-
-### Verify OTP
-
-| Method | Endpoint | Auth |
-| --- | --- | --- |
-| `POST` | `/auth/otp/verify?partnerId={partnerId}` | None |
-
-`partnerId` is required for every customer OTP verification. Use the Partner ID issued for your integration. Send `referralCode` only when the customer signs up with a referral code.
-
-Request:
-
-```bash
-curl -X POST "https://dev-api.keystonecommerce.in/api/v1/auth/otp/verify?partnerId=<partner_id>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "phone": "<customer_phone>",
-    "code": "123456",
-    "referralCode": "<referral_code>"
-  }'
-```
-
-Response:
-
-```json
-{
-  "statusCode": 200,
-  "message": "Success",
-  "data": {
-    "accessToken": "<access_token>",
-    "refreshToken": "<refresh_token>",
-    "user": {
-      "id": "cmr928qjc000002s6nh2ufmo2",
-      "phone": "<customer_phone>",
-      "name": "<customer_name>",
-      "email": "<customer_email>",
-      "role": "USER",
-      "partnerId": "<partner_id>"
+    ```json
+    {
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+        "accessToken": "<access_token>",
+        "refreshToken": "<refresh_token>",
+        "accessTokenExpiresAt": "2026-10-01T11:00:00.000Z",
+        "refreshTokenExpiresAt": "2026-10-31T10:00:00.000Z",
+        "user": {
+          "id": "cmr928qjc000002s6nh2ufmo2",
+          "name": "<customer_name>",
+          "phone": "<customer_phone>"
+        },
+        "isNewUser": true
+      }
     }
-  }
-}
-```
+    ```
 
-## Refresh token
+    The request body follows the same rules as provisioning, including the `409` identity conflict. Access tokens from this endpoint last one hour. Refresh tokens last 30 days. Send the returned tokens only to the authenticated customer over a secure connection.
 
-| Method | Endpoint | Auth |
-| --- | --- | --- |
-| `POST` | `/auth/refresh` | None |
+    **Revoke a customer's sessions**
 
-Request:
+    Revoke every access and refresh token for a customer, for example when they sign out on all devices or their account is compromised.
 
-```bash
-curl -X POST https://dev-api.keystonecommerce.in/api/v1/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{"refreshToken":"<refresh_token>"}'
-```
+    | Method | Endpoint | Auth |
+    | --- | --- | --- |
+    | `POST` | `/partner/auth/revoke` | Partner API key |
 
-Response:
+    Request:
 
-```json
-{
-  "statusCode": 200,
-  "message": "Success",
-  "data": {
-    "accessToken": "<new_access_token>",
-    "refreshToken": "<new_refresh_token>"
-  }
-}
-```
+    ```bash
+    curl -X POST https://dev-api.keystonecommerce.in/api/v1/partner/auth/revoke \
+      -H "x-api-key: <api_key>" \
+      -H "Content-Type: application/json" \
+      -d '{"externalUserId":"<external_user_id>"}'
+    ```
 
-## Logout
+    The endpoint returns `204` with no body, including for unknown External user IDs.
 
-| Method | Endpoint | Auth |
-| --- | --- | --- |
-| `POST` | `/auth/logout` | Customer access token |
+    Session creation and revocation share the provisioning rate limits: 10 per minute per External user ID and 600 per minute per partner.
+  </Accordion>
 
-Request:
+  <Accordion title="OTP login" icon="message-sms">
+    Use OTP login when Keystone must verify the customer's phone.
 
-```bash
-curl -X POST https://dev-api.keystonecommerce.in/api/v1/auth/logout \
-  -H "Authorization: Bearer <access_token>" \
-  -H "Content-Type: application/json" \
-  -d '{"refreshToken":"<refresh_token>"}'
-```
+    **Send OTP**
 
-Response:
+    | Method | Endpoint | Auth |
+    | --- | --- | --- |
+    | `POST` | `/auth/otp/send` | None |
 
-```json
-{
-  "statusCode": 200,
-  "message": "Success",
-  "data": {
-    "message": "Logged out successfully"
-  }
-}
-```
+    Request:
+
+    ```bash
+    curl -X POST https://dev-api.keystonecommerce.in/api/v1/auth/otp/send \
+      -H "Content-Type: application/json" \
+      -d '{"phone":"<customer_phone>"}'
+    ```
+
+    Response:
+
+    ```json
+    {
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+        "message": "OTP sent successfully",
+        "expiresIn": 300
+      }
+    }
+    ```
+
+    **Verify OTP**
+
+    | Method | Endpoint | Auth |
+    | --- | --- | --- |
+    | `POST` | `/auth/otp/verify?partnerId={partnerId}` | None |
+
+    `partnerId` is required for every customer OTP verification. Use the Partner ID issued for your integration. Send `referralCode` only when the customer signs up with a referral code.
+
+    Request:
+
+    ```bash
+    curl -X POST "https://dev-api.keystonecommerce.in/api/v1/auth/otp/verify?partnerId=<partner_id>" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "phone": "<customer_phone>",
+        "code": "123456",
+        "referralCode": "<referral_code>"
+      }'
+    ```
+
+    Response:
+
+    ```json
+    {
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+        "accessToken": "<access_token>",
+        "refreshToken": "<refresh_token>",
+        "accessTokenExpiresAt": "2026-10-02T10:00:00.000Z",
+        "refreshTokenExpiresAt": "2026-10-31T10:00:00.000Z",
+        "user": {
+          "id": "cmr928qjc000002s6nh2ufmo2",
+          "phone": "<customer_phone>",
+          "name": "<customer_name>",
+          "email": "<customer_email>",
+          "role": "USER",
+          "partnerId": "<partner_id>"
+        }
+      }
+    }
+    ```
+
+    OTP send and verify each allow 5 requests per minute.
+  </Accordion>
+
+  <Accordion title="Refresh and log out" icon="rotate">
+    These endpoints apply to tokens from both server-to-server session login and OTP login.
+
+    **Refresh token**
+
+    | Method | Endpoint | Auth |
+    | --- | --- | --- |
+    | `POST` | `/auth/refresh` | None |
+
+    Request:
+
+    ```bash
+    curl -X POST https://dev-api.keystonecommerce.in/api/v1/auth/refresh \
+      -H "Content-Type: application/json" \
+      -d '{"refreshToken":"<refresh_token>"}'
+    ```
+
+    Response:
+
+    ```json
+    {
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+        "accessToken": "<new_access_token>",
+        "refreshToken": "<new_refresh_token>",
+        "accessTokenExpiresAt": "2026-10-01T11:00:00.000Z",
+        "refreshTokenExpiresAt": "2026-10-31T10:00:00.000Z"
+      }
+    }
+    ```
+
+    Each Refresh token works once. Replace both stored tokens with the new pair, and send only one refresh request at a time per customer.
+
+    If a used Refresh token is sent again within 60 seconds, the API returns `401` and the new pair stays valid. If it is sent again later, Keystone treats it as stolen and revokes every session for that customer. Create a new session to recover.
+
+    Refresh allows 20 requests per minute per customer and 600 per minute per partner.
+
+    **Log out**
+
+    Logout revokes only the Refresh token you send. To revoke every session for a customer, use `POST /partner/auth/revoke`.
+
+    | Method | Endpoint | Auth |
+    | --- | --- | --- |
+    | `POST` | `/auth/logout` | Customer access token |
+
+    Request:
+
+    ```bash
+    curl -X POST https://dev-api.keystonecommerce.in/api/v1/auth/logout \
+      -H "Authorization: Bearer <access_token>" \
+      -H "Content-Type: application/json" \
+      -d '{"refreshToken":"<refresh_token>"}'
+    ```
+
+    Response:
+
+    ```json
+    {
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+        "message": "Logged out successfully"
+      }
+    }
+    ```
+  </Accordion>
+</AccordionGroup>

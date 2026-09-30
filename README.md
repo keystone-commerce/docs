@@ -21,7 +21,7 @@ mint dev
 - `docs.json` configures the Mintlify site and navigation.
 - `index.mdx` is the docs landing page.
 - `getting-started.mdx` covers the base URL, response format, and health checks.
-- `authentication.mdx` covers the Partner API key and Customer access token.
+- `authentication.mdx` covers the Partner API key and External user ID method, server-to-server session login, and OTP login.
 - `catalog.mdx` covers categories, products, and search.
 - `customers.mdx` covers profile and address APIs.
 - `orders-payments.mdx` covers checkout and payment initiation.

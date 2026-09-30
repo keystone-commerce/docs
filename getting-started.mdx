@@ -4,7 +4,7 @@ description: "Base URL, response format, and health checks"
 ---
 
 API release: `2.1.0`<br />
-Updated: 2026-08-05
+Updated: 2026-10-01
 
 Use the dev API while building and testing your integration.
 
@@ -14,7 +14,7 @@ https://dev-api.keystonecommerce.in/api/v1
 
 ## Response envelope
 
-Successful responses use a consistent envelope.
+Successful responses use a consistent envelope. The envelope `statusCode` is always `200`. Check the HTTP status for the result: requests that create a resource return HTTP `201`, and other successful requests return HTTP `200`.
 
 ```json
 {

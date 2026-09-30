@@ -3,12 +3,23 @@ title: "Wallet, Referrals, and Promotions"
 description: "Reward Points, Wallet Cash, referrals, and promotion redemption"
 ---
 
-Wallet, referral, and promotion endpoints require a Customer access token and `x-partner-id`.
+The wallet summary and wallet quote endpoints accept either customer authentication method described in [Authentication](/authentication). Referral and promotion endpoints require a Customer access token and `x-partner-id`.
 
-```http
+<CodeGroup>
+
+```http Partner API key and External user ID
+x-api-key: <api_key>
+x-external-user-id: <external_user_id>
+```
+
+```http Customer access token
 Authorization: Bearer <access_token>
 x-partner-id: <partner_id>
 ```
+
+</CodeGroup>
+
+Examples on this page use a Customer access token. With the Partner API key and External user ID method, replace the `Authorization` and `x-partner-id` headers with `x-api-key` and `x-external-user-id`.
 
 Reward Points and Wallet Cash are separate balances:
 
@@ -23,7 +34,7 @@ Use this endpoint to calculate Reward Points, Wallet Cash, delivery charges, and
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `POST` | `/wallet/quote` | Customer access token + `x-partner-id` |
+| `POST` | `/wallet/quote` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
 
 Request:
 
@@ -44,7 +55,7 @@ Response:
 
 ```json
 {
-  "statusCode": 201,
+  "statusCode": 200,
   "message": "Success",
   "data": {
     "enabled": true,
@@ -89,7 +100,7 @@ Response:
 }
 ```
 
-`useRewardPoints` and `useWalletCash` default to `true`. `deliveryMethod` defaults to `STANDARD`.
+`useRewardPoints` and `useWalletCash` default to `true`. `deliveryMethod` defaults to `STANDARD`. Send `deliveryEligibilityCartValue` when the cart value for delivery eligibility differs from `cartValue`. It defaults to `cartValue`, and Keystone subtracts applied Reward Points from it before checking free delivery.
 
 ## Get wallet
 
@@ -97,7 +108,7 @@ Returns both balances, recent transactions, and active Reward Point rules. Send 
 
 | Method | Endpoint | Auth |
 | --- | --- | --- |
-| `GET` | `/wallet?cartValue={amount}` | Customer access token + `x-partner-id` |
+| `GET` | `/wallet?cartValue={amount}` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
 
 Request:
 
@@ -241,7 +252,7 @@ Response:
 
 ```json
 {
-  "statusCode": 201,
+  "statusCode": 200,
   "message": "Success",
   "data": {
     "promotion": {

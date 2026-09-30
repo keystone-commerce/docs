@@ -3,11 +3,11 @@ title: "Errors"
 description: "Validation, authentication, and idempotency errors"
 ---
 
-Errors use the HTTP status code and a JSON body with the failure message.
+Errors use the HTTP status code and a JSON body with the failure message. Some errors also include a machine-readable `code`.
 
 ## Authentication errors
 
-Requests without a Partner API key return `401`.
+Requests without valid authentication return `401`. See [Authentication](/authentication) for the supported methods.
 
 Invalid or inactive Partner API key:
 
@@ -28,6 +28,39 @@ Missing required `x-partner-id` header:
   "message": "x-partner-id header is required",
   "timestamp": "2026-07-06T10:00:00.000Z",
   "path": "/api/v1/orders"
+}
+```
+
+Unprovisioned External user ID:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unknown partner customer identity",
+  "timestamp": "2026-10-01T10:00:00.000Z",
+  "path": "/api/v1/orders"
+}
+```
+
+Server authentication not enabled for your partner:
+
+```json
+{
+  "statusCode": 403,
+  "message": "Partner server authentication is not enabled",
+  "timestamp": "2026-10-01T10:00:00.000Z",
+  "path": "/api/v1/orders"
+}
+```
+
+Provisioning details that conflict with an existing customer identity:
+
+```json
+{
+  "statusCode": 409,
+  "message": "Partner identity does not match the existing customer account",
+  "timestamp": "2026-10-01T10:00:00.000Z",
+  "path": "/api/v1/partner/users/resolve"
 }
 ```
 
@@ -85,8 +118,10 @@ If an `x-idempotency-key` is reused with a different checkout payload, the API r
 | --- | --- |
 | `400` | Invalid request, missing `x-partner-id`, or failed business rule |
 | `401` | Missing or invalid authentication |
+| `403` | Authenticated, but the action is not allowed, for example when server authentication is not enabled |
 | `404` | Resource not found for the current customer or Partner ID |
-| `409` | Conflict, usually an idempotency or state transition conflict |
+| `409` | Conflict, usually an idempotency, identity, or state transition conflict |
 | `413` | Uploaded file is too large |
 | `429` | Request was rate limited |
 | `500` | Internal server error |
+| `503` | A required dependency is temporarily unavailable. Retry with backoff. |
