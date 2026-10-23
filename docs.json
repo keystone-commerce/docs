@@ -22,7 +22,8 @@
       "orders-payments",
       "wallet",
       "returns-support",
-      "errors"
+      "errors",
+      "dropshipping"
     ]
   },
   "logo": {

@@ -1,0 +1,208 @@
+---
+title: "Dropshipping Integration"
+description: "Connect your vendor system to Liwip for orders and shipment updates"
+---
+
+Liwip assigns paid dropshipping orders to your vendor. Your system lists these orders, cancels eligible orders, and sends shipment events to Liwip.
+
+**Connection details**
+
+Contact our support team using the **Support** button to get your dropshipping API credentials, API endpoint, webhook URL, and webhook secret.
+
+For the order examples, set these variables in your terminal, replacing the placeholders:
+
+```bash
+export LIWIP_API_ORIGIN='https://YOUR_API_HOST'
+export LIWIP_CLIENT_ID='YOUR_CLIENT_ID'
+export LIWIP_API_SECRET='YOUR_API_SECRET'
+```
+
+`LIWIP_API_ORIGIN` is only the scheme and host, such as `https://YOUR_API_HOST`, without `/api/v1` or any other path. For webhook requests, use the separate variables in the [shipment webhook reference](/dropshipping#shipment-webhook).
+
+**Authentication**
+
+Order requests require both headers on every call:
+
+```http
+X-Client-Id: YOUR_CLIENT_ID
+X-Client-Secret: YOUR_API_SECRET
+```
+
+There is no access token or login exchange for these order endpoints. These credentials are specific to the dropshipping integration; use them for both listing and cancelling orders.
+
+| HTTP status | Message | Meaning |
+| --- | --- | --- |
+| `401` | `Client credentials are required` | A required credential header is missing. |
+| `401` | `Client credentials are invalid` | The client ID or API secret is wrong, or the vendor is disabled. |
+
+Shipment events use the separate webhook secret. No signature calculation is required.
+
+## List orders
+
+`GET /api/v1/vendor/api/orders`
+
+Returns every dropshipping order assigned to your vendor, grouped by customer order, newest first. An empty result returns an empty `orders` array.
+
+```bash
+curl -s "${LIWIP_API_ORIGIN}/api/v1/vendor/api/orders" \
+  -H "X-Client-Id: ${LIWIP_CLIENT_ID}" \
+  -H "X-Client-Secret: ${LIWIP_API_SECRET}"
+```
+
+### List response data
+
+```json
+{
+  "orders": [
+    {
+      "orderId": "cmorderid",
+      "orderNumber": "LW-2610-48087",
+      "city": "Bengaluru",
+      "pincode": "560103",
+      "isDropShipping": true,
+      "status": "accepted",
+      "lines": [
+        { "sku": "SKU-1", "quantity": 2, "status": "accepted" }
+      ]
+    }
+  ]
+}
+```
+
+The order `status` and each line's `status` can be `accepted`, `packing`, `ready`, `shipped`, `delivered`, or `cancelled`.
+
+| HTTP status | Result |
+| --- | --- |
+| `200` | Returns the list, including an empty `orders` array when no orders are assigned. |
+| `401` | Missing or invalid client credentials. Both `X-Client-Id` and `X-Client-Secret` are required. |
+
+## Cancel an order
+
+`POST /api/v1/vendor/api/orders/{orderId}/cancel`
+
+Cancels the **whole customer order**. Use the `orderId` returned by the list endpoint, rather than the display `orderNumber`.
+
+Cancellation is allowed only while every line for your vendor is `accepted` or `packing`.
+
+### Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `reason` | string | Yes | Cancellation reason, 1 to 500 characters. |
+
+Replace `cmorderid` with an `orderId` from the list response:
+
+```bash
+curl -s -X POST "${LIWIP_API_ORIGIN}/api/v1/vendor/api/orders/cmorderid/cancel" \
+  -H 'Content-Type: application/json' \
+  -H "X-Client-Id: ${LIWIP_CLIENT_ID}" \
+  -H "X-Client-Secret: ${LIWIP_API_SECRET}" \
+  -d '{"reason":"Only one piece in stock"}'
+```
+
+### Cancellation response data
+
+```json
+{
+  "orderId": "cmorderid",
+  "status": "cancelled",
+  "cancelReason": "Only one piece in stock"
+}
+```
+
+| HTTP status | Result |
+| --- | --- |
+| `200` | The customer order was cancelled. |
+| `400` | `Order can only be cancelled while it is accepted or packing`, or a validation message when the reason is missing or invalid. |
+| `401` | Missing or invalid client credentials. |
+| `404` | `Order not found`: your vendor has no lines on this order. |
+| `409` | `This order is not a drop-shipping order for this vendor`. |
+
+Send progress updates through the [shipment webhook](/dropshipping#shipment-webhook).
+
+## Shipment webhook
+
+`POST /api/v1/vendor/webhooks/{vendorId}`
+
+Your system sends shipment events to Liwip when a shipment changes. Copy your full **Webhook URL** and **Webhook secret** from the vendor dashboard's Integration page.
+
+### Authentication and setup
+
+Send the webhook secret in `X-Webhook-Secret` and the event as JSON. There is no signature to calculate.
+
+Set these variables before running the examples, replacing both placeholders with your Integration values:
+
+```bash
+export LIWIP_WEBHOOK_URL='YOUR_FULL_WEBHOOK_URL'
+export LIWIP_WEBHOOK_SECRET='YOUR_WEBHOOK_SECRET'
+```
+
+### Event body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `eventId` | string | Yes | Event identifier unique to your vendor. See [Duplicate events](/dropshipping#duplicate-events). |
+| `event` | string | Yes | One of the shipment events listed below. |
+| `orderId` | string | Yes | The `orderId` from [List orders](/dropshipping#list-orders). |
+| `reason` | string | For `cancelled` | Reason for cancelling the customer order. |
+
+### Shipment events
+
+| Event | Effect |
+| --- | --- |
+| `packing` | Sets the vendor line to packing. The customer order stays confirmed. |
+| `ready_for_pickup` | Sets the vendor line to ready for pickup, fulfillment to ready to ship, and the customer order to packed. |
+| `shipped` | Sets the vendor line to shipped, fulfillment to handed over, and the customer order to shipped. |
+| `out_for_delivery` | Leaves the vendor line shipped and sets the customer order to out for delivery. |
+| `delivered` | Sets the vendor line and the customer order to delivered. |
+| `cancelled` | Cancels the whole customer order and stores the reason. |
+
+The `cancelled` event requires `reason`. Cancellation is accepted only before `ready_for_pickup`, while every line for your vendor is `accepted` or `packing`.
+
+### Send a shipment event
+
+Replace `cmorderid` with the order ID and use a unique `eventId` for each new event:
+
+```bash
+curl -s -X POST "${LIWIP_WEBHOOK_URL}" \
+  -H 'Content-Type: application/json' \
+  -H "X-Webhook-Secret: ${LIWIP_WEBHOOK_SECRET}" \
+  -d '{"eventId":"evt_1001","event":"packing","orderId":"cmorderid"}'
+```
+
+Cancellation example:
+
+```bash
+curl -s -X POST "${LIWIP_WEBHOOK_URL}" \
+  -H 'Content-Type: application/json' \
+  -H "X-Webhook-Secret: ${LIWIP_WEBHOOK_SECRET}" \
+  -d '{"eventId":"evt_1002","event":"cancelled","orderId":"cmorderid","reason":"Only one piece in stock"}'
+```
+
+#### Response data
+
+```json
+{
+  "received": true
+}
+```
+
+This object is returned in the response’s `data` field.
+
+### Duplicate events
+
+`eventId` must be unique for your vendor. Repeating the same `eventId` for the same order returns `200` without changing the order again. Reusing it for a different order returns `409` with `eventId was already used for a different order`.
+
+A `200` response can also mean that Liwip ignored the event because the order is already further along. It does not always mean that the event changed the order's current status.
+
+### Responses and errors
+
+| HTTP status | Result |
+| --- | --- |
+| `200` | The event was accepted, was a duplicate, or was ignored because the order is already further along. |
+| `400` | Invalid JSON, an unknown event, a missing cancellation reason, or `Order can only be cancelled while it is accepted or packing`. |
+| `401` | `Webhook secret is invalid`. |
+| `404` | `Order not found`. |
+| `409` | The order is not entirely your vendor's dropshipping delivery order, or `eventId was already used for a different order`. |
+
+Do not retry a `400` or `409` without resolving its cause. For a `401`, correct the webhook secret from Integration before retrying.
