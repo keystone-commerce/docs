@@ -28,5 +28,6 @@ mint dev
 - `wallet.mdx` covers wallet quote and wallet summary APIs.
 - `returns-support.mdx` covers support tickets, evidence uploads, and returns.
 - `errors.mdx` covers common error responses.
+- `dropshipping.mdx` covers vendor authentication, order listing and cancellation, shipment webhooks, and error handling.
 
 Pushing to `main` publishes the docs through Mintlify.
