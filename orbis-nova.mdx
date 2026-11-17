@@ -1,0 +1,514 @@
+---
+title: "Keystone Commerce X Orbis Nova"
+description: "Read products and stock, book orders, cancel them and track shipments"
+noindex: true
+mode: "center"
+---
+
+Updated: 2026-11-17
+
+Your server sends us orders. We pack them from our warehouse, ship them and keep each order's status up to date. You read our products and stock, book orders with your own order ID, and read the status back.
+
+## Environments
+
+Sandbox and production work the same way. Each has its own base URL and its own API key. We send both keys to you by email. A sandbox key does not work in production, and a production key does not work in sandbox.
+
+<Tabs>
+  <Tab title="Sandbox">
+    Use sandbox to build and test your integration. Sandbox orders are never shipped, but sandbox still sends real WhatsApp order updates to the customer's phone number. Use your own phone numbers for test orders.
+
+    | | |
+    | --- | --- |
+    | Base URL | `https://dev-api.keystonecommerce.in/api/v1` |
+    | API key | Sandbox key, sent by email |
+
+    ```bash
+    export KEYSTONE_API=https://dev-api.keystonecommerce.in/api/v1
+    export KEYSTONE_API_KEY=<sandbox_api_key>
+    ```
+  </Tab>
+  <Tab title="Production">
+    Production orders are real. We pack and ship them, and the courier collects cash for COD orders.
+
+    | | |
+    | --- | --- |
+    | Base URL | `https://api.keystonecommerce.in/api/v1` |
+    | API key | Production key, sent by email |
+
+    ```bash
+    export KEYSTONE_API=https://api.keystonecommerce.in/api/v1
+    export KEYSTONE_API_KEY=<production_api_key>
+    ```
+
+    Check each item before you send your first production order:
+
+    - [ ] You use the production base URL and the production API key together.
+    - [ ] The API key is stored on your server only, never in an app or website.
+    - [ ] Your SKUs match the `sku` values from `GET /products` in production.
+    - [ ] Your prices match `sellingPrice` in production, and every order sends `expectedTotal`: the amount you charged your customer.
+    - [ ] You read stock from `GET /products` and do not send orders for products with `stock` lower than the quantity.
+    - [ ] Every order has a unique `partnerOrderRef`, and you retry with the same body after a timeout.
+    - [ ] For COD orders, you show your customer the `amounts.amountToCollect` we return.
+    - [ ] You handle `400`, `404`, `409` and `429` responses as described in [Errors](#errors).
+    - [ ] You poll for order updates as described in [Order updates](#order-updates).
+    - [ ] You have sent at least one dry run and one real order in sandbox and read it back with `GET /partner/orders/{partnerOrderRef}`.
+  </Tab>
+</Tabs>
+
+## Authentication
+
+Send your API key in the `x-api-key` header on every request.
+
+```http
+x-api-key: <api_key>
+```
+
+Each API key allows 600 order requests per minute. Above that, requests return `429`; wait until the next minute and retry.
+
+## Response format
+
+Successful responses wrap the result in `data`.
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {}
+}
+```
+
+Errors return the HTTP status and a message. Some errors also include a `code`.
+
+```json
+{
+  "statusCode": 409,
+  "message": "Partner order ONPL145616 is already used by order KS-20261117-990F19F8A9",
+  "timestamp": "2026-11-17T10:00:00.000Z",
+  "path": "/api/v1/partner/orders"
+}
+```
+
+## Products and stock
+
+### List products
+
+Returns the products you can order, with your price and the stock available now. Page through all results to sync your catalog and stock.
+
+| Method | Endpoint |
+| --- | --- |
+| `GET` | `/products` |
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `page` | number | No | Default `1` |
+| `limit` | number | No | Default `20`, max `100` |
+| `sortBy` | `createdAt`, `updatedAt`, `name`, `sku` | No | Default `createdAt` |
+| `sortOrder` | `asc`, `desc` | No | Default `desc` |
+
+```bash
+curl "$KEYSTONE_API/products?page=1&limit=100&sortBy=sku&sortOrder=asc" \
+  -H "x-api-key: $KEYSTONE_API_KEY"
+```
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": "prod_sku136",
+      "name": "Neck Massager",
+      "slug": "neck-massager-sku136",
+      "brand": null,
+      "sku": "SKU136",
+      "categoryId": "cat_sub0905",
+      "sellingPrice": "999.75",
+      "mrp": "1499",
+      "stock": 48,
+      "images": ["https://storage.googleapis.com/keystone-media/products/prod_sku136/01.png"],
+      "isActive": true
+    }
+  ],
+  "meta": {
+    "total": 163,
+    "page": 1,
+    "limit": 100,
+    "totalPages": 2
+  }
+}
+```
+
+Response values are samples. Use the values your own requests return.
+
+| Field | Use |
+| --- | --- |
+| `sku` | Send this in `items[].sku` when you book an order |
+| `sellingPrice` | The price we charge for one unit, tax included |
+| `stock` | Units available to order now |
+
+### Get one product
+
+| Method | Endpoint |
+| --- | --- |
+| `GET` | `/products/{slug}` |
+
+```bash
+curl "$KEYSTONE_API/products/neck-massager-sku136" \
+  -H "x-api-key: $KEYSTONE_API_KEY"
+```
+
+The response is one product with the same fields as the list.
+
+## Orders
+
+### Book an order
+
+| Method | Endpoint |
+| --- | --- |
+| `POST` | `/partner/orders` |
+
+Body:
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `partnerOrderRef` | string | Yes | Your order ID. 1 to 64 characters: letters, numbers, `.`, `_`, `-`. Unique per order |
+| `customer.name` | string | Yes | Up to 100 characters |
+| `customer.phone` | string | Yes | Indian mobile number. `9876543210`, `+91 98765 43210` and `09876543210` are accepted |
+| `shippingAddress.line1` | string | Yes | Up to 250 characters |
+| `shippingAddress.line2` | string | No | Up to 250 characters |
+| `shippingAddress.landmark` | string | No | Up to 160 characters |
+| `shippingAddress.city` | string | Yes | |
+| `shippingAddress.state` | string | Yes | Full state name, for example `Maharashtra` |
+| `shippingAddress.pincode` | string | Yes | 6 digits |
+| `shippingAddress.alternatePhone` | string | No | Indian mobile number |
+| `items` | array | Yes | 1 to 50 lines |
+| `items[].sku` | string | Yes | `sku` from `GET /products` |
+| `items[].quantity` | number | Yes | 1 or more |
+| `paymentMode` | `PREPAID`, `COD` | Yes | `PREPAID`: your customer has paid you. `COD`: our courier collects cash on delivery |
+| `expectedTotal` | number | Yes | The order total you charged your customer, in rupees, up to 2 decimals. Must equal our total. See [Pricing](#pricing) |
+| `invoiceNumber` | string | No | The invoice your own system issued to your customer for this order, 1 to 50 characters. We print it on the courier paperwork. If you leave it out, we print our order number |
+| `invoiceDate` | string | No | The date of that invoice, `YYYY-MM-DD` |
+| `dryRun` | boolean | No | `true` checks the order and returns the price without booking it |
+
+Other fields are rejected.
+
+```bash
+curl -X POST "$KEYSTONE_API/partner/orders" \
+  -H "x-api-key: $KEYSTONE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "partnerOrderRef": "ONPL145600",
+    "customer": { "name": "Asha Rao", "phone": "9876543210" },
+    "shippingAddress": {
+      "line1": "12, 4th Cross, Indiranagar",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pincode": "560038"
+    },
+    "items": [{ "sku": "SKU136", "quantity": 1 }],
+    "paymentMode": "COD",
+    "expectedTotal": 999.75,
+    "invoiceNumber": "ON/2026/145600",
+    "invoiceDate": "2026-11-17"
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "placed": true,
+    "orderNumber": "KS-20261117-718BFE60FE",
+    "partnerOrderRef": "ONPL145600",
+    "status": "CONFIRMED",
+    "paymentMode": "COD",
+    "manualCourierReason": null,
+    "warnings": [],
+    "amounts": {
+      "subtotal": 952.14,
+      "tax": 47.61,
+      "deliveryCharge": 0,
+      "codCharge": 0,
+      "total": 999.75,
+      "amountToCollect": 999.75
+    },
+    "items": [
+      {
+        "sku": "SKU136",
+        "name": "Neck Massager",
+        "quantity": 1,
+        "unitPrice": 999.75,
+        "lineTotal": 999.75
+      }
+    ],
+    "invoiceNumber": "ON/2026/145600",
+    "invoiceDate": "2026-11-17",
+    "returns": [],
+    "createdAt": "2026-11-17T04:06:12.000Z"
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `orderNumber` | Our order number. Quote it with your `partnerOrderRef` when you contact us |
+| `status` | `CONFIRMED` once booked. See [Order status](#order-status) |
+| `amounts.total` | Order total from our prices, tax included |
+| `amounts.amountToCollect` | Cash the courier collects. `0` for `PREPAID` |
+| `manualCourierReason` | `null`, or why our team will arrange delivery by hand. See below |
+| `warnings` | Plain-text notes about the order. Empty when there are none |
+| `returns` | Returns your customer has raised with us. See [Returns](#returns) |
+
+<a id="pricing"></a>
+**Pricing.** The order total is:
+
+- `sellingPrice` × quantity for each item, plus
+- a delivery charge per order, plus
+- a COD charge per order, for `COD` orders only.
+
+Both charges are ₹0 unless we have agreed them with you; the `amounts` in every response show them. Send this total as `expectedTotal`. If it differs from ours by more than ₹0.01, we do not book the order and return `409` with code `PARTNER_ORDER_TOTAL_MISMATCH`, for example:
+
+```text
+Order total mismatch: you sent ₹999.00, our total is ₹1,029.00 (items ₹999.00, delivery ₹30.00, COD ₹0.00). Refresh prices from GET /products.
+```
+
+**Delivery our courier does not cover.** We still book the order. `manualCourierReason` tells you why and our team arranges delivery:
+
+| `manualCourierReason` | Meaning |
+| --- | --- |
+| `NOT_SERVICEABLE` | Our courier does not deliver to this pincode |
+| `COD_NOT_AVAILABLE` | Our courier cannot collect cash at this pincode |
+| `SERVICEABILITY_CHECK_FAILED` | We could not check this pincode at the time of booking |
+
+**Retries are safe.** Booking is idempotent on `partnerOrderRef`:
+
+| You send | You get |
+| --- | --- |
+| The same `partnerOrderRef` and the same body again | `200` with the existing order. No second order is created |
+| The same `partnerOrderRef` with a different body, including a different `expectedTotal`, `invoiceNumber` or `invoiceDate` | `409`. The message includes our order number |
+| The same `partnerOrderRef` after a booking that failed | `409` with code `PARTNER_ORDER_PLACEMENT_FAILED`. Use a new `partnerOrderRef` |
+
+### Check an order without booking it
+
+Send the same body with `"dryRun": true`. Nothing is booked and no stock is held. A dry run returns `200` with `placed: false`, the amounts, and any problems in `errors`, including a total mismatch. An order with an empty `errors` list can be booked.
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "placed": false,
+    "partnerOrderRef": "ONPL145600",
+    "paymentMode": "COD",
+    "manualCourierReason": null,
+    "amounts": {
+      "subtotal": 952.14,
+      "tax": 47.61,
+      "deliveryCharge": 0,
+      "codCharge": 0,
+      "total": 999.75,
+      "amountToCollect": 999.75
+    },
+    "items": [
+      { "sku": "SKU136", "name": "Neck Massager", "quantity": 1, "unitPrice": 999.75, "lineTotal": 999.75 }
+    ],
+    "errors": [],
+    "warnings": []
+  }
+}
+```
+
+### Get an order
+
+| Method | Endpoint |
+| --- | --- |
+| `GET` | `/partner/orders/{partnerOrderRef}` |
+
+```bash
+curl "$KEYSTONE_API/partner/orders/ONPL145600" \
+  -H "x-api-key: $KEYSTONE_API_KEY"
+```
+
+Returns the booked order with shipment details:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "placed": true,
+    "orderNumber": "KS-20261117-718BFE60FE",
+    "partnerOrderRef": "ONPL145600",
+    "status": "SHIPPED",
+    "paymentMode": "COD",
+    "manualCourierReason": null,
+    "warnings": [],
+    "amounts": {
+      "subtotal": 952.14,
+      "tax": 47.61,
+      "deliveryCharge": 0,
+      "codCharge": 0,
+      "total": 999.75,
+      "amountToCollect": 999.75
+    },
+    "items": [
+      { "sku": "SKU136", "name": "Neck Massager", "quantity": 1, "unitPrice": 999.75, "lineTotal": 999.75 }
+    ],
+    "invoiceNumber": "ON/2026/145600",
+    "invoiceDate": "2026-11-17",
+    "returns": [],
+    "createdAt": "2026-11-17T04:06:12.000Z",
+    "shipments": [
+      {
+        "courier": "DTDC",
+        "awb": "7D141902052",
+        "trackingUrl": "https://www.dtdc.com/track-your-shipment/?awb=7D141902052",
+        "status": "IN_TRANSIT"
+      }
+    ],
+    "cancelledAt": null,
+    "deliveredAt": null
+  }
+}
+```
+
+`shipments` is empty until the order is booked with the courier.
+
+### Cancel an order
+
+| Method | Endpoint |
+| --- | --- |
+| `POST` | `/partner/orders/{partnerOrderRef}/cancel` |
+
+```bash
+curl -X POST "$KEYSTONE_API/partner/orders/ONPL145600/cancel" \
+  -H "x-api-key: $KEYSTONE_API_KEY"
+```
+
+You can cancel while the order is `CONFIRMED` and our warehouse has not started picking it. The response is the order with `status: "CANCELLED"`. Cancelling an order that is already cancelled returns it again.
+
+After picking starts, cancel returns `409` with `Partner order has already entered warehouse processing`. Contact us with the order number to stop it.
+
+## Order status
+
+| `status` | Meaning |
+| --- | --- |
+| `CONFIRMED` | Booked and waiting in our warehouse |
+| `PACKED` | Packed and waiting for courier pickup |
+| `SHIPPED` | With the courier |
+| `OUT_FOR_DELIVERY` | Out for delivery today |
+| `DELIVERED` | Delivered. `deliveredAt` is set |
+| `CANCELLED` | Cancelled by you or us, or returned to us by the courier. `cancelledAt` is set |
+
+Shipment `status` values: `PENDING`, `BOOKED`, `PICKED_UP`, `IN_TRANSIT`, `OUT_FOR_DELIVERY`, `DELIVERED`, `DELIVERY_FAILED`, `RTO`, `RETURNED`, `CANCELLATION_PENDING`, `CANCELLED`, `ERROR`.
+
+**Returned to origin (RTO).** If the courier cannot deliver and returns the parcel, the order becomes `CANCELLED` and the shipment shows `RTO`, then `RETURNED` when it reaches us. The stock goes back into our inventory.
+
+**Invoices and refunds.** You invoice your customer and handle any refund to them. We do not send invoices or refunds for these orders.
+
+**Customer messages.** We send your customer WhatsApp updates when the order is confirmed, shipped, out for delivery, delivered, cancelled or returned to us. They come from "Liwip by Keystone Commerce". To stop them, email us.
+
+### Returns
+
+To return items, email us the `partnerOrderRef`, the SKUs and quantities, and the reason. Our team records the return, and it appears in the order's `returns`:
+
+```json
+"returns": [
+  {
+    "status": "APPROVED",
+    "resolution": "ORIGINAL_PAYMENT_REFUND",
+    "items": [{ "sku": "SKU136", "quantity": 1 }],
+    "createdAt": "2026-11-20T06:15:00.000Z",
+    "updatedAt": "2026-11-21T10:02:00.000Z"
+  }
+]
+```
+
+| `status` | Meaning |
+| --- | --- |
+| `REQUESTED`, `UNDER_REVIEW`, `NEEDS_INFO` | We are reviewing the return |
+| `APPROVED`, `RESOLVED` | Return accepted. The stock comes back to our warehouse |
+| `REJECTED` | Return not accepted |
+
+`resolution` is `ORIGINAL_PAYMENT_REFUND` when your customer should get a refund from you, or `NO_REFUND`. We do not refund your customer, and we do not send replacements for these orders: if your customer wants a replacement, book a new order.
+
+## Order updates
+
+### Poll for changes
+
+Until webhooks are live, poll this endpoint to get every order that changed since your last poll.
+
+| Method | Endpoint |
+| --- | --- |
+| `GET` | `/partner/orders` |
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `updatedSince` | ISO 8601 timestamp | No | Orders changed at or after this time |
+| `cursor` | string | No | `nextCursor` from the previous page |
+| `limit` | number | No | Default `50`, max `100` |
+
+```bash
+curl "$KEYSTONE_API/partner/orders?updatedSince=2026-11-17T04:00:00.000Z&limit=100" \
+  -H "x-api-key: $KEYSTONE_API_KEY"
+```
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "items": [
+      {
+        "orderNumber": "KS-20261117-718BFE60FE",
+        "partnerOrderRef": "ONPL145600",
+        "status": "SHIPPED",
+        "shipments": [
+          { "courier": "DTDC", "awb": "7D141902052", "trackingUrl": "https://www.dtdc.com/track-your-shipment/?awb=7D141902052", "status": "IN_TRANSIT" }
+        ],
+        "changedAt": "2026-11-17T09:42:10.512Z"
+      }
+    ],
+    "nextCursor": null
+  }
+}
+```
+
+Each item has the same fields as [Get an order](#get-an-order), plus `changedAt`: the time of the latest order, shipment or return change. The example above is shortened.
+
+How to poll:
+
+1. Call with `updatedSince` set to the `changedAt` of the last item you processed, minus one minute.
+2. While `nextCursor` is not `null`, call again with the same `updatedSince` and `cursor=<nextCursor>`.
+3. Skip items you already processed with the same `partnerOrderRef` and `changedAt`.
+4. Repeat every 5 minutes.
+
+Changes from the last few seconds appear on the next poll.
+
+### Webhooks
+
+Webhooks are planned and not live yet. Once they are live, we will call your endpoint when an order changes, for example when it ships, goes out for delivery, is delivered, is cancelled or is returned to us. Polling keeps working after that.
+
+To set them up, send us:
+
+- Your webhook URL for sandbox and for production.
+- How we should authenticate to your endpoint, for example a shared secret or a signature header.
+- The payload structure you expect, and the response you send for success.
+- How you want failed deliveries retried.
+
+## Errors
+
+| Status | When | What to do |
+| --- | --- | --- |
+| `400` | The body is invalid, a SKU is unknown or not orderable, or stock is short. The message lists the reasons. Some booking failures also have code `PARTNER_ORDER_INVALID` | Fix the request. Use `dryRun` to check first |
+| `401` | The API key is missing or wrong | Check `x-api-key` and the base URL |
+| `403` | Orders are not enabled for your key | Contact us |
+| `404` | No order with this `partnerOrderRef` for your key | Check the reference |
+| `409` | `expectedTotal` differs from our total (`PARTNER_ORDER_TOTAL_MISMATCH`), `partnerOrderRef` reused with a different body, booking failed earlier (`PARTNER_ORDER_PLACEMENT_FAILED`), the order is still being confirmed, or cancel after picking started | Read the message. For a total mismatch, refresh prices and send a new order. Retry the same body if it says the order is still being confirmed |
+| `429` | More than 600 order requests in a minute | Wait for the next minute |
+| `5xx` | Our error | Retry the same request after a short wait. Retries with the same body are safe |
+
+For help, email [tech@keystonecommerce.in](mailto:tech@keystonecommerce.in) with the `partnerOrderRef` and our `orderNumber`.
