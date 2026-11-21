@@ -1,0 +1,46 @@
+---
+title: "Order status and returns"
+sidebarTitle: "Order status"
+noindex: true
+---
+
+| `status` | Meaning |
+| --- | --- |
+| `CONFIRMED` | Booked and waiting in our warehouse |
+| `PACKED` | Packed and waiting for courier pickup |
+| `SHIPPED` | With the courier |
+| `OUT_FOR_DELIVERY` | Out for delivery today |
+| `DELIVERED` | Delivered. `deliveredAt` is set |
+| `CANCELLED` | Cancelled by you or us, or returned to us by the courier. `cancelledAt` is set |
+
+Shipment `status` values: `PENDING`, `BOOKED`, `PICKED_UP`, `IN_TRANSIT`, `OUT_FOR_DELIVERY`, `DELIVERED`, `DELIVERY_FAILED`, `RTO`, `RETURNED`, `CANCELLATION_PENDING`, `CANCELLED`, `ERROR`.
+
+**Returned to origin (RTO).** If the courier cannot deliver and returns the parcel, the order becomes `CANCELLED` and the shipment shows `RTO`, then `RETURNED` when it reaches us. The stock goes back into our inventory.
+
+**Invoices and refunds.** You invoice your customer and handle any refund to them. We do not send invoices or refunds for these orders.
+
+**Customer messages.** We send your customer WhatsApp updates when the order is confirmed, shipped, out for delivery, delivered, cancelled or returned to us. They come from "Liwip by Keystone Commerce". To stop them, email us.
+
+## Returns
+
+To return items, email us the `partnerOrderRef`, the SKUs and quantities, and the reason. Our team records the return, and it appears in the order's `returns`:
+
+```json
+"returns": [
+  {
+    "status": "APPROVED",
+    "resolution": "ORIGINAL_PAYMENT_REFUND",
+    "items": [{ "sku": "SKU136", "quantity": 1 }],
+    "createdAt": "2026-11-20T06:15:00.000Z",
+    "updatedAt": "2026-11-21T10:02:00.000Z"
+  }
+]
+```
+
+| `status` | Meaning |
+| --- | --- |
+| `REQUESTED`, `UNDER_REVIEW`, `NEEDS_INFO` | We are reviewing the return |
+| `APPROVED`, `RESOLVED` | Return accepted. The stock comes back to our warehouse |
+| `REJECTED` | Return not accepted |
+
+`resolution` is `ORIGINAL_PAYMENT_REFUND` when your customer should get a refund from you, or `NO_REFUND`. We do not refund your customer, and we do not send replacements for these orders: if your customer wants a replacement, book a new order.

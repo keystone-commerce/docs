@@ -13,16 +13,33 @@
   },
   "favicon": "/favicon.svg",
   "navigation": {
-    "pages": [
-      "index",
-      "getting-started",
-      "authentication",
-      "catalog",
-      "customers",
-      "orders-payments",
-      "wallet",
-      "returns-support",
-      "errors"
+    "tabs": [
+      {
+        "tab": "API Docs",
+        "pages": [
+          "index",
+          "getting-started",
+          "authentication",
+          "catalog",
+          "customers",
+          "orders-payments",
+          "wallet",
+          "returns-support",
+          "errors"
+        ]
+      },
+      {
+        "tab": "Orbis Nova",
+        "hidden": true,
+        "pages": [
+          "orbis-nova",
+          "orbis-nova/products",
+          "orbis-nova/orders",
+          "orbis-nova/order-status",
+          "orbis-nova/order-updates",
+          "orbis-nova/errors"
+        ]
+      }
     ]
   },
   "logo": {
@@ -39,14 +56,14 @@
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   }
 }

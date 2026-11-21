@@ -1,0 +1,66 @@
+---
+title: "Order updates"
+noindex: true
+---
+
+## Poll for changes
+
+Until webhooks are live, poll this endpoint to get every order that changed since your last poll.
+
+| Method | Endpoint |
+| --- | --- |
+| `GET` | `/partner/orders` |
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `updatedSince` | ISO 8601 timestamp | No | Orders changed at or after this time |
+| `cursor` | string | No | `nextCursor` from the previous page |
+| `limit` | number | No | Default `50`, max `100` |
+
+```bash
+curl "$KEYSTONE_API/partner/orders?updatedSince=2026-11-17T04:00:00.000Z&limit=100" \
+  -H "x-api-key: $KEYSTONE_API_KEY"
+```
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "items": [
+      {
+        "orderNumber": "KS-20261117-718BFE60FE",
+        "partnerOrderRef": "ONPL145600",
+        "status": "SHIPPED",
+        "shipments": [
+          { "courier": "DTDC", "awb": "7D141902052", "trackingUrl": "https://www.dtdc.com/track-your-shipment/?awb=7D141902052", "status": "IN_TRANSIT" }
+        ],
+        "changedAt": "2026-11-17T09:42:10.512Z"
+      }
+    ],
+    "nextCursor": null
+  }
+}
+```
+
+Each item has the same fields as [Get an order](/orbis-nova/orders#get-an-order), plus `changedAt`: the time of the latest order, shipment or return change. The example above is shortened.
+
+How to poll:
+
+1. Call with `updatedSince` set to the `changedAt` of the last item you processed, minus one minute.
+2. While `nextCursor` is not `null`, call again with the same `updatedSince` and `cursor=<nextCursor>`.
+3. Skip items you already processed with the same `partnerOrderRef` and `changedAt`.
+4. Repeat every 5 minutes.
+
+Changes from the last few seconds appear on the next poll.
+
+## Webhooks
+
+Webhooks are planned and not live yet. Once they are live, we will call your endpoint when an order changes, for example when it ships, goes out for delivery, is delivered, is cancelled or is returned to us. Polling keeps working after that.
+
+To set them up, send us:
+
+- Your webhook URL for sandbox and for production.
+- How we should authenticate to your endpoint, for example a shared secret or a signature header.
+- The payload structure you expect, and the response you send for success.
+- How you want failed deliveries retried.

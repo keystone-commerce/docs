@@ -1,0 +1,16 @@
+---
+title: "Errors"
+noindex: true
+---
+
+| Status | When | What to do |
+| --- | --- | --- |
+| `400` | The body is invalid, a SKU is unknown or not orderable, or stock is short. The message lists the reasons. Some booking failures also have code `PARTNER_ORDER_INVALID` | Fix the request. Use `dryRun` to check first |
+| `401` | The API key is missing or wrong | Check `x-api-key` and the base URL |
+| `403` | Orders are not enabled for your key | Contact us |
+| `404` | No order with this `partnerOrderRef` for your key | Check the reference |
+| `409` | `expectedTotal` differs from our total (`PARTNER_ORDER_TOTAL_MISMATCH`), `partnerOrderRef` reused with a different body, booking failed earlier (`PARTNER_ORDER_PLACEMENT_FAILED`), the order is still being confirmed, or cancel after picking started | Read the message. For a total mismatch, refresh prices and send a new order. Retry the same body if it says the order is still being confirmed |
+| `429` | More than 600 order requests in a minute | Wait for the next minute |
+| `5xx` | Our error | Retry the same request after a short wait. Retries with the same body are safe |
+
+For help, email [tech@keystonecommerce.in](mailto:tech@keystonecommerce.in) with the `partnerOrderRef` and our `orderNumber`.

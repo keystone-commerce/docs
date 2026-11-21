@@ -1,0 +1,73 @@
+---
+title: "Products and stock"
+noindex: true
+---
+
+## List products
+
+Returns the products you can order, with your price and the stock available now. Page through all results to sync your catalog and stock.
+
+| Method | Endpoint |
+| --- | --- |
+| `GET` | `/products` |
+
+| Param | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `page` | number | No | Default `1` |
+| `limit` | number | No | Default `20`, max `100` |
+| `sortBy` | `createdAt`, `updatedAt`, `name`, `sku` | No | Default `createdAt` |
+| `sortOrder` | `asc`, `desc` | No | Default `desc` |
+
+```bash
+curl "$KEYSTONE_API/products?page=1&limit=100&sortBy=sku&sortOrder=asc" \
+  -H "x-api-key: $KEYSTONE_API_KEY"
+```
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": [
+    {
+      "id": "prod_sku136",
+      "name": "Neck Massager",
+      "slug": "neck-massager-sku136",
+      "brand": null,
+      "sku": "SKU136",
+      "categoryId": "cat_sub0905",
+      "sellingPrice": "999.75",
+      "mrp": "1499",
+      "stock": 48,
+      "images": ["https://storage.googleapis.com/keystone-media/products/prod_sku136/01.png"],
+      "isActive": true
+    }
+  ],
+  "meta": {
+    "total": 163,
+    "page": 1,
+    "limit": 100,
+    "totalPages": 2
+  }
+}
+```
+
+Response values are samples. Use the values your own requests return.
+
+| Field | Use |
+| --- | --- |
+| `sku` | Send this in `items[].sku` when you book an order |
+| `sellingPrice` | The price we charge for one unit, tax included |
+| `stock` | Units available to order now |
+
+## Get one product
+
+| Method | Endpoint |
+| --- | --- |
+| `GET` | `/products/{slug}` |
+
+```bash
+curl "$KEYSTONE_API/products/neck-massager-sku136" \
+  -H "x-api-key: $KEYSTONE_API_KEY"
+```
+
+The response is one product with the same fields as the list.

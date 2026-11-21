@@ -1,0 +1,237 @@
+---
+title: "Orders"
+noindex: true
+---
+
+## Book an order
+
+| Method | Endpoint |
+| --- | --- |
+| `POST` | `/partner/orders` |
+
+Body:
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `partnerOrderRef` | string | Yes | Your order ID. 1 to 64 characters: letters, numbers, `.`, `_`, `-`. Unique per order |
+| `customer.name` | string | Yes | Up to 100 characters |
+| `customer.phone` | string | Yes | Indian mobile number. `9876543210`, `+91 98765 43210` and `09876543210` are accepted |
+| `shippingAddress.line1` | string | Yes | Up to 250 characters |
+| `shippingAddress.line2` | string | No | Up to 250 characters |
+| `shippingAddress.landmark` | string | No | Up to 160 characters |
+| `shippingAddress.city` | string | Yes | |
+| `shippingAddress.state` | string | Yes | Full state name, for example `Maharashtra` |
+| `shippingAddress.pincode` | string | Yes | 6 digits |
+| `shippingAddress.alternatePhone` | string | No | Indian mobile number |
+| `items` | array | Yes | 1 to 50 lines |
+| `items[].sku` | string | Yes | `sku` from `GET /products` |
+| `items[].quantity` | number | Yes | 1 or more |
+| `paymentMode` | `PREPAID`, `COD` | Yes | `PREPAID`: your customer has paid you. `COD`: our courier collects cash on delivery |
+| `expectedTotal` | number | Yes | The order total you charged your customer, in rupees, up to 2 decimals. Must equal our total. See [Pricing](#pricing) |
+| `invoiceNumber` | string | No | The invoice your own system issued to your customer for this order, 1 to 50 characters. We print it on the courier paperwork. If you leave it out, we print our order number |
+| `invoiceDate` | string | No | The date of that invoice, `YYYY-MM-DD` |
+| `dryRun` | boolean | No | `true` checks the order and returns the price without booking it |
+
+Other fields are rejected.
+
+```bash
+curl -X POST "$KEYSTONE_API/partner/orders" \
+  -H "x-api-key: $KEYSTONE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "partnerOrderRef": "ONPL145600",
+    "customer": { "name": "Asha Rao", "phone": "9876543210" },
+    "shippingAddress": {
+      "line1": "12, 4th Cross, Indiranagar",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pincode": "560038"
+    },
+    "items": [{ "sku": "SKU136", "quantity": 1 }],
+    "paymentMode": "COD",
+    "expectedTotal": 999.75,
+    "invoiceNumber": "ON/2026/145600",
+    "invoiceDate": "2026-11-17"
+  }'
+```
+
+Response:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "placed": true,
+    "orderNumber": "KS-20261117-718BFE60FE",
+    "partnerOrderRef": "ONPL145600",
+    "status": "CONFIRMED",
+    "paymentMode": "COD",
+    "manualCourierReason": null,
+    "warnings": [],
+    "amounts": {
+      "subtotal": 952.14,
+      "tax": 47.61,
+      "deliveryCharge": 0,
+      "codCharge": 0,
+      "total": 999.75,
+      "amountToCollect": 999.75
+    },
+    "items": [
+      {
+        "sku": "SKU136",
+        "name": "Neck Massager",
+        "quantity": 1,
+        "unitPrice": 999.75,
+        "lineTotal": 999.75
+      }
+    ],
+    "invoiceNumber": "ON/2026/145600",
+    "invoiceDate": "2026-11-17",
+    "returns": [],
+    "createdAt": "2026-11-17T04:06:12.000Z"
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `orderNumber` | Our order number. Quote it with your `partnerOrderRef` when you contact us |
+| `status` | `CONFIRMED` once booked. See [Order status](/orbis-nova/order-status) |
+| `amounts.total` | Order total from our prices, tax included |
+| `amounts.amountToCollect` | Cash the courier collects. `0` for `PREPAID` |
+| `manualCourierReason` | `null`, or why our team will arrange delivery by hand. See below |
+| `warnings` | Plain-text notes about the order. Empty when there are none |
+| `returns` | Returns your customer has raised with us. See [Returns](/orbis-nova/order-status#returns) |
+
+<a id="pricing"></a>
+**Pricing.** The order total is:
+
+- `sellingPrice` × quantity for each item, plus
+- a delivery charge per order, plus
+- a COD charge per order, for `COD` orders only.
+
+Both charges are ₹0 unless we have agreed them with you; the `amounts` in every response show them. Send this total as `expectedTotal`. If it differs from ours by more than ₹0.01, we do not book the order and return `409` with code `PARTNER_ORDER_TOTAL_MISMATCH`, for example:
+
+```text
+Order total mismatch: you sent ₹999.00, our total is ₹1,029.00 (items ₹999.00, delivery ₹30.00, COD ₹0.00). Refresh prices from GET /products.
+```
+
+**Delivery our courier does not cover.** We still book the order. `manualCourierReason` tells you why and our team arranges delivery:
+
+| `manualCourierReason` | Meaning |
+| --- | --- |
+| `NOT_SERVICEABLE` | Our courier does not deliver to this pincode |
+| `COD_NOT_AVAILABLE` | Our courier cannot collect cash at this pincode |
+| `SERVICEABILITY_CHECK_FAILED` | We could not check this pincode at the time of booking |
+
+**Retries are safe.** Booking is idempotent on `partnerOrderRef`:
+
+| You send | You get |
+| --- | --- |
+| The same `partnerOrderRef` and the same body again | `200` with the existing order. No second order is created |
+| The same `partnerOrderRef` with a different body, including a different `expectedTotal`, `invoiceNumber` or `invoiceDate` | `409`. The message includes our order number |
+| The same `partnerOrderRef` after a booking that failed | `409` with code `PARTNER_ORDER_PLACEMENT_FAILED`. Use a new `partnerOrderRef` |
+
+## Check an order without booking it
+
+Send the same body with `"dryRun": true`. Nothing is booked and no stock is held. A dry run returns `200` with `placed: false`, the amounts, and any problems in `errors`, including a total mismatch. An order with an empty `errors` list can be booked.
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "placed": false,
+    "partnerOrderRef": "ONPL145600",
+    "paymentMode": "COD",
+    "manualCourierReason": null,
+    "amounts": {
+      "subtotal": 952.14,
+      "tax": 47.61,
+      "deliveryCharge": 0,
+      "codCharge": 0,
+      "total": 999.75,
+      "amountToCollect": 999.75
+    },
+    "items": [
+      { "sku": "SKU136", "name": "Neck Massager", "quantity": 1, "unitPrice": 999.75, "lineTotal": 999.75 }
+    ],
+    "errors": [],
+    "warnings": []
+  }
+}
+```
+
+## Get an order
+
+| Method | Endpoint |
+| --- | --- |
+| `GET` | `/partner/orders/{partnerOrderRef}` |
+
+```bash
+curl "$KEYSTONE_API/partner/orders/ONPL145600" \
+  -H "x-api-key: $KEYSTONE_API_KEY"
+```
+
+Look up an order by the `partnerOrderRef` you booked it with. For the orders we booked for you from your order sheet, that is your ONPL order number (for example `ONPLSW2125`), not your store's internal order ID.
+
+Returns the booked order with shipment details:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "placed": true,
+    "orderNumber": "KS-20261117-718BFE60FE",
+    "partnerOrderRef": "ONPL145600",
+    "status": "SHIPPED",
+    "paymentMode": "COD",
+    "manualCourierReason": null,
+    "warnings": [],
+    "amounts": {
+      "subtotal": 952.14,
+      "tax": 47.61,
+      "deliveryCharge": 0,
+      "codCharge": 0,
+      "total": 999.75,
+      "amountToCollect": 999.75
+    },
+    "items": [
+      { "sku": "SKU136", "name": "Neck Massager", "quantity": 1, "unitPrice": 999.75, "lineTotal": 999.75 }
+    ],
+    "invoiceNumber": "ON/2026/145600",
+    "invoiceDate": "2026-11-17",
+    "returns": [],
+    "createdAt": "2026-11-17T04:06:12.000Z",
+    "shipments": [
+      {
+        "courier": "DTDC",
+        "awb": "7D141902052",
+        "trackingUrl": "https://www.dtdc.com/track-your-shipment/?awb=7D141902052",
+        "status": "IN_TRANSIT"
+      }
+    ],
+    "cancelledAt": null,
+    "deliveredAt": null
+  }
+}
+```
+
+`shipments` is empty until the order is booked with the courier.
+
+## Cancel an order
+
+| Method | Endpoint |
+| --- | --- |
+| `POST` | `/partner/orders/{partnerOrderRef}/cancel` |
+
+```bash
+curl -X POST "$KEYSTONE_API/partner/orders/ONPL145600/cancel" \
+  -H "x-api-key: $KEYSTONE_API_KEY"
+```
+
+You can cancel while the order is `CONFIRMED` and our warehouse has not started picking it. The response is the order with `status: "CANCELLED"`. Cancelling an order that is already cancelled returns it again.
+
+After picking starts, cancel returns `409` with `Partner order has already entered warehouse processing`. Contact us with the order number to stop it.
