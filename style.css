@@ -48,3 +48,21 @@
   background-color: rgb(20 83 45 / 0.35);
   border-color: rgb(21 128 61);
 }
+
+/* Compact request-field tables: keep field names on one line. */
+.field-table table {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.field-table th,
+.field-table td {
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+  vertical-align: top;
+}
+
+.field-table td:first-child,
+.field-table td:first-child code {
+  white-space: nowrap;
+}
