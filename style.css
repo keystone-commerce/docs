@@ -12,3 +12,39 @@
   height: 1.25rem !important;
   width: auto !important;
 }
+
+/* Field badges: whether a request field must be sent. */
+.field-badge {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  white-space: nowrap;
+}
+
+.field-required {
+  color: rgb(185 28 28);
+  background-color: rgb(254 226 226);
+  border-color: rgb(252 165 165);
+}
+
+.field-optional {
+  color: rgb(21 128 61);
+  background-color: rgb(220 252 231);
+  border-color: rgb(134 239 172);
+}
+
+.dark .field-required {
+  color: rgb(252 165 165);
+  background-color: rgb(127 29 29 / 0.35);
+  border-color: rgb(185 28 28);
+}
+
+.dark .field-optional {
+  color: rgb(134 239 172);
+  background-color: rgb(20 83 45 / 0.35);
+  border-color: rgb(21 128 61);
+}

@@ -9,39 +9,47 @@ noindex: true
 | --- | --- |
 | `POST` | `/partner/orders` |
 
-Send these fields in the JSON body.
+Send these fields in the JSON body. Each field is marked <span className="field-badge field-required">Required</span> or <span className="field-badge field-optional">Optional</span>.
 
-**Required fields.** Every order must include all of these:
+### Required fields
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `partnerOrderRef` | string | Your order ID. 1 to 64 characters: letters, numbers, `.`, `_`, `-`. Unique per order |
-| `customer.name` | string | Up to 100 characters |
-| `customer.phone` | string | Indian mobile number. `9876543210`, `+91 98765 43210` and `09876543210` are accepted |
-| `shippingAddress.line1` | string | Up to 250 characters |
-| `shippingAddress.city` | string | |
-| `shippingAddress.state` | string | Full state name, for example `Maharashtra` |
-| `shippingAddress.pincode` | string | 6 digits |
-| `items` | array | 1 to 50 lines |
-| `items[].sku` | string | `sku` from `GET /products` |
-| `items[].quantity` | number | 1 or more |
-| `paymentMode` | `PREPAID`, `COD` | `PREPAID`: your customer has paid you. `COD`: our courier collects cash on delivery |
-| `orderAmount` | number | The amount you charged your customer for this order, in rupees, up to 2 decimals. We record it as the order total and, for `COD`, our courier collects exactly this amount. Must be more than `0` for `COD`. See [Order amount](#pricing) |
+Every order must include all of these. If one is missing, we reject the order with `400`.
 
-**Optional fields.** Send these when you have them:
+| | Field | Type | Notes |
+| --- | --- | --- | --- |
+| <span className="field-badge field-required">Required</span> | `partnerOrderRef` | string | Your order ID. 1 to 64 characters: letters, numbers, `.`, `_`, `-`. Unique per order |
+| <span className="field-badge field-required">Required</span> | `customer.name` | string | Up to 100 characters |
+| <span className="field-badge field-required">Required</span> | `customer.phone` | string | Indian mobile number. `9876543210`, `+91 98765 43210` and `09876543210` are accepted |
+| <span className="field-badge field-required">Required</span> | `shippingAddress.line1` | string | Up to 250 characters |
+| <span className="field-badge field-required">Required</span> | `shippingAddress.city` | string | |
+| <span className="field-badge field-required">Required</span> | `shippingAddress.state` | string | Full state name, for example `Maharashtra` |
+| <span className="field-badge field-required">Required</span> | `shippingAddress.pincode` | string | 6 digits |
+| <span className="field-badge field-required">Required</span> | `items` | array | 1 to 50 lines |
+| <span className="field-badge field-required">Required</span> | `items[].sku` | string | `sku` from `GET /products` |
+| <span className="field-badge field-required">Required</span> | `items[].quantity` | number | 1 or more |
+| <span className="field-badge field-required">Required</span> | `paymentMode` | `PREPAID`, `COD` | `PREPAID`: your customer has paid you. `COD`: our courier collects cash on delivery |
+| <span className="field-badge field-required">Required</span> | `orderAmount` | number | The amount you charged your customer for this order, in rupees, up to 2 decimals. We record it as the order total and, for `COD`, our courier collects exactly this amount. Must be more than `0` for `COD`. See [Order amount](#pricing) |
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `shippingAddress.line2` | string | Up to 250 characters |
-| `shippingAddress.landmark` | string | Up to 160 characters |
-| `shippingAddress.alternatePhone` | string | Another Indian mobile number for the courier to call |
-| `invoiceNumber` | string | The invoice your own system issued to your customer for this order, 1 to 50 characters. We print it on the courier paperwork. If you leave it out, we print our order number |
-| `invoiceDate` | string | The date of that invoice, `YYYY-MM-DD` |
-| `dryRun` | boolean | `true` checks the order and returns the amounts without booking it. See [Check an order without booking it](#check-an-order-without-booking-it) |
+### Optional fields
 
-Other fields are rejected.
+Send these when you have them. You can leave any of them out.
 
-```bash
+| | Field | Type | Notes |
+| --- | --- | --- | --- |
+| <span className="field-badge field-optional">Optional</span> | `shippingAddress.line2` | string | Up to 250 characters |
+| <span className="field-badge field-optional">Optional</span> | `shippingAddress.landmark` | string | Up to 160 characters |
+| <span className="field-badge field-optional">Optional</span> | `shippingAddress.alternatePhone` | string | Another Indian mobile number for the courier to call |
+| <span className="field-badge field-optional">Optional</span> | `invoiceNumber` | string | The invoice your own system issued to your customer for this order, 1 to 50 characters. We print it on the courier paperwork. If you leave it out, we print our order number |
+| <span className="field-badge field-optional">Optional</span> | `invoiceDate` | string | The date of that invoice, `YYYY-MM-DD` |
+| <span className="field-badge field-optional">Optional</span> | `dryRun` | boolean | `true` checks the order and returns the amounts without booking it. See [Check an order without booking it](#check-an-order-without-booking-it) |
+
+Any other field is rejected with `400`. Fields not listed here, such as `deliveryMethod` or `label`, must not be sent.
+
+Both examples below book the same kind of order. The first sends only the <span className="field-badge field-required">Required</span> fields. The second also sends every <span className="field-badge field-optional">Optional</span> field.
+
+<CodeGroup>
+
+```bash Required fields only
 curl -X POST "$KEYSTONE_API/partner/orders" \
   -H "x-api-key: $KEYSTONE_API_KEY" \
   -H "Content-Type: application/json" \
@@ -56,11 +64,38 @@ curl -X POST "$KEYSTONE_API/partner/orders" \
     },
     "items": [{ "sku": "SKU136", "quantity": 1 }],
     "paymentMode": "COD",
-    "orderAmount": 999.75,
-    "invoiceNumber": "ON/2026/145600",
-    "invoiceDate": "2026-11-17"
+    "orderAmount": 999.75
   }'
 ```
+
+```bash With optional fields
+curl -X POST "$KEYSTONE_API/partner/orders" \
+  -H "x-api-key: $KEYSTONE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "partnerOrderRef": "ONPL145600",
+    "customer": { "name": "Asha Rao", "phone": "9876543210" },
+    "shippingAddress": {
+      "line1": "12, 4th Cross, Indiranagar",
+      "line2": "Flat 3B, Lake View Apartments",
+      "landmark": "Near Indiranagar Metro",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "pincode": "560038",
+      "alternatePhone": "9123456780"
+    },
+    "items": [{ "sku": "SKU136", "quantity": 1 }],
+    "paymentMode": "COD",
+    "orderAmount": 999.75,
+    "invoiceNumber": "ON/2026/145600",
+    "invoiceDate": "2026-11-17",
+    "dryRun": false
+  }'
+```
+
+</CodeGroup>
+
+Only send headers `x-api-key` and `Content-Type`. Do not send `x-external-user-id` or an idempotency header: `partnerOrderRef` makes retries safe.
 
 Response:
 
