@@ -9,28 +9,35 @@ noindex: true
 | --- | --- |
 | `POST` | `/partner/orders` |
 
-Body:
+Send these fields in the JSON body.
 
-| Field | Type | Required | Notes |
-| --- | --- | --- | --- |
-| `partnerOrderRef` | string | Yes | Your order ID. 1 to 64 characters: letters, numbers, `.`, `_`, `-`. Unique per order |
-| `customer.name` | string | Yes | Up to 100 characters |
-| `customer.phone` | string | Yes | Indian mobile number. `9876543210`, `+91 98765 43210` and `09876543210` are accepted |
-| `shippingAddress.line1` | string | Yes | Up to 250 characters |
-| `shippingAddress.line2` | string | No | Up to 250 characters |
-| `shippingAddress.landmark` | string | No | Up to 160 characters |
-| `shippingAddress.city` | string | Yes | |
-| `shippingAddress.state` | string | Yes | Full state name, for example `Maharashtra` |
-| `shippingAddress.pincode` | string | Yes | 6 digits |
-| `shippingAddress.alternatePhone` | string | No | Indian mobile number |
-| `items` | array | Yes | 1 to 50 lines |
-| `items[].sku` | string | Yes | `sku` from `GET /products` |
-| `items[].quantity` | number | Yes | 1 or more |
-| `paymentMode` | `PREPAID`, `COD` | Yes | `PREPAID`: your customer has paid you. `COD`: our courier collects cash on delivery |
-| `orderAmount` | number | Yes | The amount you charged your customer for this order, in rupees, up to 2 decimals. We record it as the order total and, for `COD`, our courier collects exactly this amount. Must be more than `0` for `COD`. See [Order amount](#pricing) |
-| `invoiceNumber` | string | No | The invoice your own system issued to your customer for this order, 1 to 50 characters. We print it on the courier paperwork. If you leave it out, we print our order number |
-| `invoiceDate` | string | No | The date of that invoice, `YYYY-MM-DD` |
-| `dryRun` | boolean | No | `true` checks the order and returns the price without booking it |
+**Required fields.** Every order must include all of these:
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `partnerOrderRef` | string | Your order ID. 1 to 64 characters: letters, numbers, `.`, `_`, `-`. Unique per order |
+| `customer.name` | string | Up to 100 characters |
+| `customer.phone` | string | Indian mobile number. `9876543210`, `+91 98765 43210` and `09876543210` are accepted |
+| `shippingAddress.line1` | string | Up to 250 characters |
+| `shippingAddress.city` | string | |
+| `shippingAddress.state` | string | Full state name, for example `Maharashtra` |
+| `shippingAddress.pincode` | string | 6 digits |
+| `items` | array | 1 to 50 lines |
+| `items[].sku` | string | `sku` from `GET /products` |
+| `items[].quantity` | number | 1 or more |
+| `paymentMode` | `PREPAID`, `COD` | `PREPAID`: your customer has paid you. `COD`: our courier collects cash on delivery |
+| `orderAmount` | number | The amount you charged your customer for this order, in rupees, up to 2 decimals. We record it as the order total and, for `COD`, our courier collects exactly this amount. Must be more than `0` for `COD`. See [Order amount](#pricing) |
+
+**Optional fields.** Send these when you have them:
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `shippingAddress.line2` | string | Up to 250 characters |
+| `shippingAddress.landmark` | string | Up to 160 characters |
+| `shippingAddress.alternatePhone` | string | Another Indian mobile number for the courier to call |
+| `invoiceNumber` | string | The invoice your own system issued to your customer for this order, 1 to 50 characters. We print it on the courier paperwork. If you leave it out, we print our order number |
+| `invoiceDate` | string | The date of that invoice, `YYYY-MM-DD` |
+| `dryRun` | boolean | `true` checks the order and returns the amounts without booking it. See [Check an order without booking it](#check-an-order-without-booking-it) |
 
 Other fields are rejected.
 
