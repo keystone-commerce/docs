@@ -27,7 +27,7 @@ Body:
 | `items[].sku` | string | Yes | `sku` from `GET /products` |
 | `items[].quantity` | number | Yes | 1 or more |
 | `paymentMode` | `PREPAID`, `COD` | Yes | `PREPAID`: your customer has paid you. `COD`: our courier collects cash on delivery |
-| `expectedTotal` | number | Yes | The order total you charged your customer, in rupees, up to 2 decimals. Must equal our total. See [Pricing](#pricing) |
+| `orderAmount` | number | Yes | The amount you charged your customer for this order, in rupees, up to 2 decimals. We record it as the order total and, for `COD`, our courier collects exactly this amount. Must be more than `0` for `COD`. See [Order amount](#pricing) |
 | `invoiceNumber` | string | No | The invoice your own system issued to your customer for this order, 1 to 50 characters. We print it on the courier paperwork. If you leave it out, we print our order number |
 | `invoiceDate` | string | No | The date of that invoice, `YYYY-MM-DD` |
 | `dryRun` | boolean | No | `true` checks the order and returns the price without booking it |
@@ -49,7 +49,7 @@ curl -X POST "$KEYSTONE_API/partner/orders" \
     },
     "items": [{ "sku": "SKU136", "quantity": 1 }],
     "paymentMode": "COD",
-    "expectedTotal": 999.75,
+    "orderAmount": 999.75,
     "invoiceNumber": "ON/2026/145600",
     "invoiceDate": "2026-11-17"
   }'
@@ -98,24 +98,16 @@ Response:
 | --- | --- |
 | `orderNumber` | Our order number. Quote it with your `partnerOrderRef` when you contact us |
 | `status` | `CONFIRMED` once booked. See [Order status](/orbis-nova/order-status) |
-| `amounts.total` | Order total from our prices, tax included |
-| `amounts.amountToCollect` | Cash the courier collects. `0` for `PREPAID` |
+| `amounts.total` | The `orderAmount` you sent |
+| `amounts.amountToCollect` | Cash the courier collects: your `orderAmount` for `COD`, `0` for `PREPAID` |
 | `manualCourierReason` | `null`, or why our team will arrange delivery by hand. See below |
 | `warnings` | Plain-text notes about the order. Empty when there are none |
 | `returns` | Returns your customer has raised with us. See [Returns](/orbis-nova/order-status#returns) |
 
 <a id="pricing"></a>
-**Pricing.** The order total is:
+**Order amount.** Send the amount you charged your customer as `orderAmount`. We do not check it against our prices, because your order may include other items or charges. We record it as the order total, and for `COD` orders our courier collects exactly this amount.
 
-- `sellingPrice` × quantity for each item, plus
-- a delivery charge per order, plus
-- a COD charge per order, for `COD` orders only.
-
-Both charges are ₹0 unless we have agreed them with you; the `amounts` in every response show them. Send this total as `expectedTotal`. If it differs from ours by more than ₹0.01, we do not book the order and return `409` with code `PARTNER_ORDER_TOTAL_MISMATCH`, for example:
-
-```text
-Order total mismatch: you sent ₹999.00, our total is ₹1,029.00 (items ₹999.00, delivery ₹30.00, COD ₹0.00). Refresh prices from GET /products.
-```
+`subtotal`, `tax`, `deliveryCharge`, `codCharge` and the `items` prices in the response are our own prices for the items we ship (`sellingPrice` × quantity, plus any delivery and COD charges we have agreed with you). They do not change what your customer pays.
 
 **Delivery our courier does not cover.** We still book the order. `manualCourierReason` tells you why and our team arranges delivery:
 
@@ -130,12 +122,12 @@ Order total mismatch: you sent ₹999.00, our total is ₹1,029.00 (items ₹999
 | You send | You get |
 | --- | --- |
 | The same `partnerOrderRef` and the same body again | `200` with the existing order. No second order is created |
-| The same `partnerOrderRef` with a different body, including a different `expectedTotal`, `invoiceNumber` or `invoiceDate` | `409`. The message includes our order number |
+| The same `partnerOrderRef` with a different body, including a different `orderAmount`, `invoiceNumber` or `invoiceDate` | `409`. The message includes our order number |
 | The same `partnerOrderRef` after a booking that failed | `409` with code `PARTNER_ORDER_PLACEMENT_FAILED`. Use a new `partnerOrderRef` |
 
 ## Check an order without booking it
 
-Send the same body with `"dryRun": true`. Nothing is booked and no stock is held. A dry run returns `200` with `placed: false`, the amounts, and any problems in `errors`, including a total mismatch. An order with an empty `errors` list can be booked.
+Send the same body with `"dryRun": true`. Nothing is booked and no stock is held. A dry run returns `200` with `placed: false`, the amounts, and any problems in `errors`. An order with an empty `errors` list can be booked.
 
 ```json
 {
