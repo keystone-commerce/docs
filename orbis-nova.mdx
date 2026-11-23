@@ -45,7 +45,7 @@ Sandbox and production work the same way. Each has its own base URL and its own 
     - [ ] You use the production base URL and the production API key together.
     - [ ] The API key is stored on your server only, never in an app or website.
     - [ ] Your SKUs match the `sku` values from `GET /products` in production.
-    - [ ] Your prices match `sellingPrice` in production, and every order sends `expectedTotal`: the amount you charged your customer.
+    - [ ] Every order sends `orderAmount`: the amount you charged your customer. For `COD`, our courier collects exactly this amount.
     - [ ] You read stock from `GET /products` and do not send orders for products with `stock` lower than the quantity.
     - [ ] Every order has a unique `partnerOrderRef`, and you retry with the same body after a timeout.
     - [ ] For COD orders, you show your customer the `amounts.amountToCollect` we return.
