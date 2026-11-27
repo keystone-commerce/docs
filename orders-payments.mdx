@@ -521,6 +521,146 @@ Response:
 }
 ```
 
+## Track an order
+
+Tracking comes back in the same [Retrieve order](#retrieve-order) response. [List orders](#list-orders) returns the same fields for each order, so you can refresh many orders in one call.
+
+| Method | Endpoint | Auth |
+| --- | --- | --- |
+| `GET` | `/orders/{orderId}` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
+
+Request:
+
+```bash
+curl https://dev-api.keystonecommerce.in/api/v1/orders/cmr928rlh000702s6a4yh7rls \
+  -H "Authorization: Bearer <access_token>" \
+  -H "x-partner-id: <partner_id>"
+```
+
+Response, shortened to the tracking fields:
+
+```json
+{
+  "statusCode": 200,
+  "message": "Success",
+  "data": {
+    "id": "cmr928rlh000702s6a4yh7rls",
+    "orderNumber": "KS-20261104-8DEACA50C6",
+    "status": "DELIVERED",
+    "fulfillments": [
+      {
+        "id": "cmr92a1xk000c02s6t7e9u1pq",
+        "status": "DELIVERED",
+        "events": [
+          {
+            "id": "cmr9b7q2m001d02s6k3h8w0zr",
+            "eventType": "HANDED_OVER",
+            "fromStatus": "READY_TO_SHIP",
+            "toStatus": "HANDED_OVER",
+            "note": null,
+            "createdAt": "2026-11-04T13:10:00.000Z"
+          },
+          {
+            "id": "cmr9b2v8t001a02s6p5d1x4yn",
+            "eventType": "PACKED",
+            "fromStatus": "PACKING",
+            "toStatus": "PACKED",
+            "note": null,
+            "createdAt": "2026-11-04T10:45:00.000Z"
+          }
+        ],
+        "shipment": {
+          "provider": "DTDC",
+          "awbNumber": "7D141902052",
+          "status": "DELIVERED",
+          "providerStatus": "Delivered",
+          "trackingEvents": [
+            {
+              "code": "BKD",
+              "status": "BKD",
+              "description": "Shipment Booked",
+              "location": "SARAKKI BRANCH",
+              "occurredAt": 1793802120000,
+              "notes": ""
+            },
+            {
+              "code": "OUTDLV",
+              "status": "OUTDLV",
+              "description": "Out for Delivery",
+              "location": "GOTTIGERE - BG ROAD",
+              "occurredAt": 1793867820000,
+              "notes": ""
+            },
+            {
+              "code": "NONDLV",
+              "status": "NONDLV",
+              "description": "Undelivered",
+              "location": "GOTTIGERE - BG ROAD",
+              "occurredAt": 1793877360000,
+              "notes": "OFFICE CLOSED OR DOOR LOCK-(CIR)"
+            },
+            {
+              "code": "DLV",
+              "status": "DLV",
+              "description": "Delivered",
+              "location": "GOTTIGERE - BG ROAD",
+              "occurredAt": 1793952480000,
+              "notes": ""
+            }
+          ],
+          "bookedAt": "2026-11-04T13:05:00.000Z",
+          "pickedUpAt": "2026-11-04T14:22:00.000Z",
+          "deliveredAt": "2026-11-06T08:08:00.000Z",
+          "lastTrackedAt": "2026-11-06T08:30:00.000Z"
+        }
+      }
+    ]
+  }
+}
+```
+
+### Order status
+
+Use the order `status` for the main progress bar.
+
+| `status` | Meaning |
+| --- | --- |
+| `PENDING_PAYMENT` | Waiting for online payment |
+| `PLACED` | Order received |
+| `CONFIRMED` | Confirmed and being prepared in the warehouse |
+| `PACKED` | Packed and waiting for courier pickup |
+| `SHIPPED` | With the courier |
+| `OUT_FOR_DELIVERY` | Out for delivery today |
+| `DELIVERED` | Delivered |
+| `CANCELLED` | Cancelled, or returned to us by the courier |
+| `READY_FOR_PICKUP`, `PICKED_UP` | Store pickup orders only |
+
+### Fulfillments
+
+An order can ship in more than one parcel, so `fulfillments` is an array with one entry per parcel.
+
+| Field | Notes |
+| --- | --- |
+| `status` | Warehouse stage: `AWAITING_PAYMENT`, `ASSIGNED`, `PICKING`, `PACKING`, `PACKED`, `READY_TO_SHIP`, `HANDED_OVER`, `OUT_FOR_DELIVERY`, `DELIVERED` or `CANCELLED`. Store pickup orders use `READY_FOR_PICKUP` and `COLLECTED` |
+| `events` | Warehouse stage history, newest first, up to 20 entries. Each entry has `fromStatus`, `toStatus` and `createdAt` |
+| `shipment` | The current courier shipment. `null` until a courier is booked |
+
+### Shipment
+
+| Field | Notes |
+| --- | --- |
+| `provider` | Courier: `DTDC`, `SHADOWFAX` or `ITHINK` |
+| `awbNumber` | Courier tracking number (AWB) |
+| `status` | `PENDING`, `BOOKED`, `PICKED_UP`, `IN_TRANSIT`, `OUT_FOR_DELIVERY`, `DELIVERED`, `DELIVERY_FAILED`, `RTO`, `RETURNED`, `CANCELLATION_PENDING`, `CANCELLED` or `ERROR` |
+| `providerStatus` | The courier's own status text |
+| `trackingEvents` | Courier scans. Each has `code`, `status`, `description`, `location` and `occurredAt` (Unix time in milliseconds), and may have `notes` or `failureReason`. Sort by `occurredAt` before showing them |
+| `bookedAt`, `pickedUpAt`, `deliveredAt` | Set when each step happens |
+| `lastTrackedAt` | When we last fetched an update from the courier |
+
+Use `shipment.status` for logic. It has the same values for every courier. `trackingEvents[].code` differs by courier, so show `description`, `location` and `occurredAt` to your customer instead of mapping codes.
+
+If the courier cannot deliver and returns the parcel, the shipment shows `RTO`, then `RETURNED` when it reaches us, and the order becomes `CANCELLED`.
+
 ## List order invoices
 
 Returns the invoices for an order. Orders can have a `PRODUCT` invoice and a `DELIVERY` invoice.
