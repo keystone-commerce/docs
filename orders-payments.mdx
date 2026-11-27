@@ -533,10 +533,12 @@ Tracking comes back in the same [Retrieve order](#retrieve-order) response. [Lis
 | --- | --- | --- |
 | `GET` | `/orders/{orderId}` | Partner API key + External user ID, or Customer access token + `x-partner-id` |
 
+`{orderId}` can be the `orderNumber` (`KS-...`) or the order `id`.
+
 Request:
 
 ```bash
-curl https://dev-api.keystonecommerce.in/api/v1/orders/cmr928rlh000702s6a4yh7rls \
+curl https://dev-api.keystonecommerce.in/api/v1/orders/KS-20261104-8DEACA50C6 \
   -H "Authorization: Bearer <access_token>" \
   -H "x-partner-id: <partner_id>"
 ```
