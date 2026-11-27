@@ -99,7 +99,7 @@ curl -X PUT "<signed_upload_url>" \
 | --- | --- | --- |
 | `topic` | Yes | 2 to 120 characters |
 | `detail` | Yes | 5 to 5,000 characters |
-| `orderId` | No | An order that belongs to this customer |
+| `orderId` | No | The order `id` (not the `KS-` order number) of an order that belongs to this customer |
 | `imageUrls` | No | Up to 5 `publicUrl` values from the upload flow |
 
 | Method | Endpoint | Auth |
@@ -262,7 +262,7 @@ Returns require a delivered order. A prepaid order must also be paid; a COD orde
 
 | Field | Required | Rules |
 | --- | --- | --- |
-| `orderId` | Yes | A delivered order that belongs to this customer |
+| `orderId` | Yes | The order `id` (not the `KS-` order number) of a delivered order that belongs to this customer |
 | `reason` | Yes | 2 to 120 characters |
 | `detail` | Yes | 5 to 5,000 characters |
 | `requestedResolution` | No | One of the resolutions below. Default `ORIGINAL_PAYMENT_REFUND` |

@@ -27,7 +27,7 @@ Send `x-idempotency-key` when creating an order or initiating a payment, and reu
 - **Payments:** while a payment session is active, initiating again returns that same session, whatever the key or body. Once the attempt has ended (for example after abandon), reusing its key returns `409` `Payment attempt idempotency key has already been used`, so send a new key for each new attempt.
 
 <Note>
-`{orderId}` in every endpoint on this page is the order `id` returned by [Create order](#create-order), for example `cmr928rlh000702s6a4yh7rls`. It is not the `orderNumber` (`KS-...`). Store the `id` when you create the order.
+`{orderId}` in every endpoint on this page accepts either the order `id` (for example `cmr928rlh000702s6a4yh7rls`) or the `orderNumber` (for example `KS-20260706-8DEACA50C6`). Both are returned by [Create order](#create-order), so you can store just the `orderNumber`.
 </Note>
 
 ## Check shipping serviceability
