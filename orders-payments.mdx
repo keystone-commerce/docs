@@ -26,6 +26,10 @@ Send `x-idempotency-key` when creating an order or initiating a payment, and reu
 - **Orders:** the same key with the same order returns the original order instead of creating a second one. The same key with different items, address, alternate phone, coupon, payment mode, delivery method or balance options returns `409` `Checkout idempotency key has already been used with a different payload`. `paymentReturnUrl` is not compared.
 - **Payments:** while a payment session is active, initiating again returns that same session, whatever the key or body. Once the attempt has ended (for example after abandon), reusing its key returns `409` `Payment attempt idempotency key has already been used`, so send a new key for each new attempt.
 
+<Note>
+`{orderId}` in every endpoint on this page is the order `id` returned by [Create order](#create-order), for example `cmr928rlh000702s6a4yh7rls`. It is not the `orderNumber` (`KS-...`). Store the `id` when you create the order.
+</Note>
+
 ## Check shipping serviceability
 
 Check delivery methods and payment options for a cart before checkout.
